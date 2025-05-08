@@ -53,7 +53,7 @@ class Piece {
         return justStopped && this.position == pos;
     }
 
-
+//
 
 
 }
