@@ -9,7 +9,7 @@ public class YutThrow {
             return cheat(scanner);
         else
             return justice();
-    }
+    } //
 
     // for testing
     private static int[] cheat(Scanner scanner) {

@@ -42,7 +42,7 @@ class Piece {
         this.position = leader.position;
         this.currentPath = leader.currentPath;
         this.justStopped = leader.justStopped;
-    }
+    } //
 
 
     public void setBranchPath(Board.BranchPath path) {

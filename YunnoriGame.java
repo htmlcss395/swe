@@ -22,4 +22,4 @@ public class YunnoriGame {
         Game game = new Game(numTeams, numPieces, isTest);
         game.startGame(scanner);
     }
-}
+} //

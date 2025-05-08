@@ -58,7 +58,7 @@ public class Board {
             p.setBranchPath(BranchPath.CENTRAL);
 
         }
-
+//
         else if (pos == 10 && justStopped){
             p.setBranchPath(BranchPath.OUTER);
         }
