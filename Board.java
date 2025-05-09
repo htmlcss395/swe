@@ -1,137 +1,161 @@
+
+// Board.java (Remove internal Center rule prints)
+import java.util.ArrayList;
+import java.util.List;
+// Scanner is not needed for Board logic now
+// import java.util.Scanner;
+
+// Handles the Yunnori board logic and piece movements
 public class Board {
-
-    public static final int BOARD_SIZE = 29; // 0 to 29, 30 is finish line
-    Piece[][] teams;
-
-    public Board(int numTeams, int numPieces) {
-        this.teams = new Piece[numTeams][numPieces];
-        // Initialize all pieces as 0
-        for (int i = 0; i < numTeams; i++) {
-            for (int j = 0; j < numPieces; j++) {
-                teams[i][j] = new Piece();
-            }
-        }
+    // No longer needs scanner
+    public Board() {
     }
 
-    public void movePiece(int teamIdx, int pieceIdx, int steps){
-        Piece p = teams[teamIdx][pieceIdx];
+    // getPreviousPosition method (remains the same with 0-30 mapping and
+    // simplification for BackDo from 23)
+    private int getPreviousPosition(int currentPos) {
+        if (currentPos == 0)
+            return 0;
+        if (currentPos == 30)
+            return 29;
 
-        //move
-        p.move(steps);
+        if (currentPos == 29)
+            return 28;
+        if (currentPos == 28)
+            return 23;
 
+        if (currentPos == 23) {
+            return 29;
+        }
 
-        //
-        for (int t = 0; t < teams.length; t++){
-            if (t == teamIdx) continue;
-            for (Piece other : teams[t])
-            {
-                if (other.getPosition() == p.getPosition()){
-                    other.reset();
+        if (currentPos == 15)
+            return 25;
+        if (currentPos == 25)
+            return 24;
+        if (currentPos == 24)
+            return 23;
+
+        if (currentPos == 22)
+            return 21;
+        if (currentPos == 21)
+            return 5;
+
+        if (currentPos == 27)
+            return 26;
+        if (currentPos == 26)
+            return 10;
+
+        return currentPos - 1;
+    }
+
+    // calculateTargetPosition method (Remove internal Center rule prints)
+    public int calculateTargetPosition(Piece piece, int steps) {
+        int originalPos = piece.getCurrentPositionIndex();
+        int currentSimulationPos = originalPos;
+
+        if (piece.isFinished()) {
+            return 30;
+        }
+        if (steps == -1) {
+            if (originalPos == 0) {
+                System.out.println("Piece at Start (0) moves with Back Do to position 20."); // Keep special rule print
+                return 20;
+            }
+            return getPreviousPosition(originalPos);
+        }
+
+        for (int i = 0; i < steps; i++) {
+            if (currentSimulationPos == 30) {
+                break;
+            }
+
+            int nextPosAfterOneStep = -1;
+
+            // --- Center (23) transition: Based on ORIGINAL start position ---
+            if (currentSimulationPos == 23) {
+                if (originalPos == 23) {
+                    nextPosAfterOneStep = 28; // Started at 23 -> towards Finish
+                } else {
+                    nextPosAfterOneStep = 24; // Landed on 23 mid-roll -> towards 15
                 }
             }
+            // --- Other standard transitions ---
+            else if (currentSimulationPos == 0)
+                nextPosAfterOneStep = 1;
+            // Start roll at Corner 1 (5) or Corner 2 (10) rule (only applies on first step,
+            // moves to shortcut)
+            else if (i == 0 && originalPos == 5) {
+                nextPosAfterOneStep = 21;
+            } else if (i == 0 && originalPos == 10) {
+                nextPosAfterOneStep = 26;
+            }
+            // End of Outer (20)
+            else if (currentSimulationPos == 20)
+                nextPosAfterOneStep = 30;
+            // End of Shortcut 1 (22) -> Center (23)
+            else if (currentSimulationPos == 22)
+                nextPosAfterOneStep = 23;
+            // End of Shortcut 2 (27) -> Center (23)
+            else if (currentSimulationPos == 27)
+                nextPosAfterOneStep = 23;
+            // End of Path from 23 towards 15 (25) -> Corner 3 (15)
+            else if (currentSimulationPos == 25)
+                nextPosAfterOneStep = 15;
+            // End of Common Path towards Finish (29) -> Finish (30)
+            else if (currentSimulationPos == 29)
+                nextPosAfterOneStep = 30;
+            // --- Standard linear movement ---
+            else {
+                nextPosAfterOneStep = currentSimulationPos + 1;
+            }
+
+            currentSimulationPos = nextPosAfterOneStep;
         }
 
-        for (Piece buddy : teams[teamIdx]) {
-            if (buddy != p && buddy.getPosition() == p.getPosition()) {
-                buddy.groupWith(p);
+        if (currentSimulationPos > 30) {
+            currentSimulationPos = 30;
+        }
+
+        return currentSimulationPos;
+    }
+
+    // findOpponentPiecesAt, resetPiecesToStart, printBoardState, isValidMoveStart
+    // methods
+    // (These remain the same, using Finish = 30)
+    // ... (copy/paste from previous response) ...
+    public List<Piece> findOpponentPiecesAt(int targetPosition, Team currentPlayerTeam, List<Team> allTeams) {
+        List<Piece> caughtPieces = new ArrayList<>();
+        if (targetPosition == 0 || targetPosition == 30) {
+            return caughtPieces;
+        }
+
+        for (Team team : allTeams) {
+            if (team.getId() != currentPlayerTeam.getId()) {
+                caughtPieces.addAll(team.getPiecesAt(targetPosition));
             }
         }
-
-
+        return caughtPieces;
     }
 
-    public enum BranchPath {
-        CENTRAL,
-        OUTER,
-        PENTAGON_INNER1,
-        PENTAGON_INNER2,
-        HEXAGON_INNER1,
-        HEXAGON_INNER2,
-        HEXAGON_INNER3
-    }
-    // Determining which direction the piece will move at the junction
-    private void handleBranching(Piece p) {
-        int pos = p.getPosition();
-        boolean justStopped = p.hasJustStoppedAt(pos);
-
-        if (pos == 5 && p.hasJustStoppedAt(pos)){
-            p.setBranchPath(BranchPath.CENTRAL);
-
+    public void resetPiecesToStart(List<Piece> piecesToReset) {
+        for (Piece piece : piecesToReset) {
+            piece.reset();
         }
-//
-        else if (pos == 10 && justStopped){
-            p.setBranchPath(BranchPath.OUTER);
-        }
-
-        else if (pos == 7 && justStopped){
-            p.setBranchPath(BranchPath.PENTAGON_INNER1);
-        }
-
-        else if (pos == 17 && justStopped) {
-            p.setBranchPath(BranchPath.PENTAGON_INNER2);
-        }
-
-        else if (pos == 6 && justStopped) {
-            p.setBranchPath(BranchPath.HEXAGON_INNER1);
-        }
-
-        else if (pos == 14 && justStopped) {
-            p.setBranchPath(BranchPath.HEXAGON_INNER2);
-        }
-
-        else if (pos == 22 && justStopped) {
-            p.setBranchPath(BranchPath.HEXAGON_INNER3);
-        }
-
-
-        //todo: if p.hasMultipleStops 구현해오기
-
     }
 
-
-        // Get the positions of pieces for all teams (for display purposes)
-    public void displayBoard() {
-        for (int i = 0; i < teams.length; i++) {
-            System.out.print("Team " + (i + 1) + " positions: ");
-            for (int j = 0; j < teams[i].length; j++) {
-                System.out.print(teams[i][j].getPosition() + " ");
+    public void printBoardState(List<Team> teams) {
+        System.out.println("\n--- Current Board State ---");
+        for (Team team : teams) {
+            System.out.print(team + ": ");
+            for (Piece piece : team.getPieces()) {
+                System.out.print(piece + " ");
             }
             System.out.println();
         }
+        System.out.println("---------------------------");
     }
 
-
-
-    // Check whether any team has completed the game
-    public boolean isGameOver() {
-        for (int i = 0; i < teams.length; i++) {
-            if (allPiecesFinished(teams[i])) {
-                return true;
-            }
-        }
-        return false;
+    public boolean isValidMoveStart(Piece piece, int steps) {
+        return piece.canMove(steps);
     }
-
-    private boolean allPiecesFinished(Piece[] team) {
-        for (Piece piece : team) {
-            if (piece.getPosition() <= BOARD_SIZE) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-
-    // When the game ends, return the team that completed all of its pieces first, otherwise return -1.
-    public int getWinningTeam() {
-        for (int i = 0; i < teams.length; i++) {
-            if (allPiecesFinished(teams[i])) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-
-
 }
