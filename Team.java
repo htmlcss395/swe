@@ -1,14 +1,12 @@
-
-// Team.java (Bring back finishedPiecesCount counter)
 import java.util.ArrayList;
 import java.util.List;
-// import java.util.stream.Collectors; // Not needed if only using counter
+import java.util.stream.Collectors; // Keep if used for other things, otherwise remove
 
-// Represents a team
 public class Team {
     private int id;
     private List<Piece> pieces;
-    private int finishedPiecesCount; // Track finished pieces count
+    // removed finishedPiecesCount field and pieceFinished() method
+    // private int finishedPiecesCount;
 
     public Team(int id, int numPieces) {
         this.id = id;
@@ -16,7 +14,8 @@ public class Team {
         for (int i = 0; i < numPieces; i++) {
             pieces.add(new Piece(i, id));
         }
-        this.finishedPiecesCount = 0; // Initialize count
+        // removed initialization
+        // this.finishedPiecesCount = 0;
     }
 
     public int getId() {
@@ -27,19 +26,16 @@ public class Team {
         return pieces;
     }
 
-    // Use the tracked counter
     public int getFinishedPiecesCount() {
-        return finishedPiecesCount;
+        // Always recalculate directly from pieces
+        return (int) pieces.stream().filter(Piece::isFinished).count();
     }
 
-    // Call this when a piece finishes
-    public void pieceFinished() {
-        this.finishedPiecesCount++;
-    }
+    // removed pieceFinished() method
+    // public void pieceFinished() { }
 
     public boolean isWinner() {
-        // Check if the tracked finished count equals the total number of pieces
-        return finishedPiecesCount == pieces.size();
+        return getFinishedPiecesCount() == pieces.size();
     }
 
     public List<Piece> getPiecesAt(int positionIndex) {

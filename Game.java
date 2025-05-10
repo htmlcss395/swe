@@ -1,5 +1,3 @@
-
-// Game.java (Call team.pieceFinished(), remove comments)
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,7 +18,7 @@ public class Game {
         this.numTeams = numTeams;
         this.numPieces = numPieces;
         this.scanner = scanner;
-        this.board = new Board();
+        this.board = new Board(); // Board doesn't need scanner now
         this.roller = new YunnoriRoller(isTest, scanner);
         this.teams = new ArrayList<>();
         for (int i = 0; i < numTeams; i++) {
@@ -42,27 +40,30 @@ public class Game {
             System.out.println("\n--- " + currentTeam + "'s turn ---");
             board.printBoardState(teams);
 
-            playTurn(currentTeam);
+            // playTurn will return true if this team wins during its turn (including extra
+            // turns)
+            gameWon = playTurn(currentTeam);
 
-            if (currentTeam.isWinner()) {
+            if (gameWon) {
                 System.out.println("\n**************************************");
                 System.out.println(currentTeam + " wins the game!");
                 System.out.println("**************************************");
-                gameWon = true;
+                // The while loop condition will now be false and terminate
             } else {
-                if (!gameWon) {
-                    System.out.println("\nEnd of " + currentTeam + "'s turn.");
-                    currentPlayerIndex = (currentPlayerIndex + 1) % numTeams;
-                }
+                System.out.println("\nEnd of " + currentTeam + "'s turn.");
+                currentPlayerIndex = (currentPlayerIndex + 1) % numTeams;
             }
         }
         System.out.println("\n--- Game Over ---");
     }
 
-    private void playTurn(Team team) {
+    // playTurn now returns boolean: true if the team wins during this turn (or its
+    // extra turns)
+    private boolean playTurn(Team team) {
         boolean extraTurnEarned = false;
-        boolean caughtOpponentThisTurn = false;
+        boolean caughtOpponentThisTurn = false; // Track catches across all rolls in this turn phase
 
+        // Phase 1: Rolling
         List<YunnoriRoll> earnedRolls = new ArrayList<>();
         boolean continueRolling = true;
         System.out.println(team + " is rolling...");
@@ -80,6 +81,7 @@ public class Game {
             }
         }
 
+        // Phase 2: Reordering (if applicable)
         boolean canReorder = earnedRolls.stream().anyMatch(r -> r == YunnoriRoll.YUT || r == YunnoriRoll.MO);
         if (canReorder && earnedRolls.size() > 1) {
             reorderRolls(earnedRolls);
@@ -90,11 +92,26 @@ public class Game {
             System.out.println("\nNo rolls earned this turn.");
         }
 
+        // Phase 3: Processing Rolls - Only if there are rolls to process
+        boolean teamBecameWinner = false; // Flag to indicate if the team won *during* processing rolls
         if (!earnedRolls.isEmpty()) {
-            caughtOpponentThisTurn = processRolls(team, earnedRolls);
+            // processRolls now returns true if ANY piece was caught OR if the team wins
+            boolean processOutcome = processRolls(team, earnedRolls);
+            // Check if the team became winner immediately after processing rolls
+            if (team.isWinner()) {
+                teamBecameWinner = true;
+            } else {
+                // If not a winner yet, check if any piece was caught during processing
+                caughtOpponentThisTurn = processOutcome; // Use the boolean returned by processRolls
+            }
         }
 
-        if (extraTurnEarned || caughtOpponentThisTurn) {
+        // Phase 4: Check for Extra Turn and handle Recursion
+        if (teamBecameWinner) {
+            // If the team became winner, stop any potential extra turns and signal win back
+            // up the call stack.
+            return true; // Signal that the team won
+        } else if (extraTurnEarned || caughtOpponentThisTurn) {
             System.out.print("\n" + team + " earned an extra turn");
             if (extraTurnEarned && caughtOpponentThisTurn) {
                 System.out.println(" (due to Yut/Mo and catching)!");
@@ -104,14 +121,20 @@ public class Game {
                 System.out.println(" (due to catching)!");
             }
 
-            playTurn(team); // Recursive call
+            // Recursive call: Play another turn for the same team
+            // IMPORTANT: Return the result of the recursive call. This propagates the win
+            // flag up.
+            return playTurn(team);
         } else {
-            System.out.println("\nEnd of " + team + "'s turn.");
+            // No extra turn and not a winner yet. This turn is fully complete.
+            return false; // Signal that the team did NOT win in this turn
         }
     }
 
+    // processRolls now returns boolean: true if ANY piece was caught, OR if the
+    // team is now a winner
     private boolean processRolls(Team team, List<YunnoriRoll> rolls) {
-        boolean caughtOpponentThisTurn = false;
+        boolean caughtOpponentDuringProcessing = false;
 
         for (int i = 0; i < rolls.size(); i++) {
             YunnoriRoll currentRoll = rolls.get(i);
@@ -144,10 +167,11 @@ public class Game {
 
             chosenPiece.moveTo(targetPosition);
 
+            // Announce the move result
             if (oldPosition != chosenPiece.getCurrentPositionIndex() || chosenPiece.isFinished()) {
                 System.out.println(team + " " + chosenPiece.toString() + " moved from " + oldPosition + ".");
 
-                // Check for catches at the final target position
+                // Check for catches at the *final* target position
                 if (chosenPiece.getCurrentPositionIndex() > 0 && chosenPiece.getCurrentPositionIndex() < 30) {
                     List<Piece> caughtOpponentPieces = board.findOpponentPiecesAt(chosenPiece.getCurrentPositionIndex(),
                             team, teams);
@@ -155,21 +179,30 @@ public class Game {
                         System.out.println(team + " caught opponent pieces at position "
                                 + chosenPiece.getCurrentPositionIndex() + "!");
                         board.resetPiecesToStart(caughtOpponentPieces);
-                        caughtOpponentThisTurn = true;
+                        caughtOpponentDuringProcessing = true; // Set flag if any catch occurs
                     }
                 }
 
-                // Announce if the piece finished AND update the team's finished count
+                // Announce if the piece finished
                 if (chosenPiece.isFinished()) {
                     System.out.println(team + " " + chosenPiece.toString() + " finished!");
-                    team.pieceFinished(); // CALL THE METHOD HERE
                 }
+            }
 
+            // Check immediately if the team is now a winner after ANY move within this
+            // processing loop
+            if (team.isWinner()) {
+                // If the team wins, we can stop processing the remaining rolls immediately
+                // and signal the win up the call stack.
+                // This processRolls method should signal this win back.
+                return true; // Signal that the team has won
             }
 
             board.printBoardState(teams);
         }
-        return caughtOpponentThisTurn;
+        // If the loop finishes without the team winning, return whether any catches
+        // occurred.
+        return caughtOpponentDuringProcessing;
     }
 
     private Piece selectPieceToMove(Team team, List<Piece> validPieces) {
