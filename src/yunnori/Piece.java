@@ -1,7 +1,9 @@
+package src.yunnori;
+
 public class Piece {
     private int id;
     private int teamId;
-    private int currentPositionIndex; // 0-30 mapping the board, + 30 for Finish
+    private int currentPositionIndex; // 0-31 mapping the board, + 31 for Finish
     private boolean isFinished;
 
     public Piece(int id, int teamId) {
@@ -33,13 +35,12 @@ public class Piece {
 
     public void moveTo(int newPositionIndex) {
         this.currentPositionIndex = newPositionIndex;
-        if (newPositionIndex == 30) { // Finish is now 30
+        if (newPositionIndex == 31) { // Finish is now 31
             this.isFinished = true;
         }
     }
 
     public void reset() {
-        System.out.println("Team " + (teamId + 1) + " Piece " + (id + 1) + " caught! Returning to start (0).");
         this.currentPositionIndex = 0;
         this.isFinished = false;
     }
@@ -48,9 +49,9 @@ public class Piece {
         if (isFinished()) {
             return false;
         }
-        if (currentPositionIndex == 30) {
+        if (currentPositionIndex == 31) {
             return false;
-        } // Already at finish (30)
+        } // Already at finish (31)
         if (currentPositionIndex == 0 && steps == -1) {
             return true;
         } // Special BackDo from start
@@ -60,8 +61,7 @@ public class Piece {
         if (steps > 0) {
             return true;
         } // Can always move forward if not finished
-
-        return false; // steps is 0 or other invalid scenario
+        return false;
     }
 
     @Override

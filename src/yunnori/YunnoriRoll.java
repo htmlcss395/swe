@@ -1,3 +1,5 @@
+package src.yunnori;
+
 public enum YunnoriRoll {
     DO(1), GAE(2), GEOL(3), YUT(4), MO(5), BACK_DO(-1);
 

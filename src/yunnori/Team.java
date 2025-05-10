@@ -1,12 +1,12 @@
+package src.yunnori;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors; // Keep if used for other things, otherwise remove
+import java.util.stream.Collectors;
 
 public class Team {
     private int id;
     private List<Piece> pieces;
-    // removed finishedPiecesCount field and pieceFinished() method
-    // private int finishedPiecesCount;
 
     public Team(int id, int numPieces) {
         this.id = id;
@@ -14,8 +14,6 @@ public class Team {
         for (int i = 0; i < numPieces; i++) {
             pieces.add(new Piece(i, id));
         }
-        // removed initialization
-        // this.finishedPiecesCount = 0;
     }
 
     public int getId() {
@@ -27,12 +25,8 @@ public class Team {
     }
 
     public int getFinishedPiecesCount() {
-        // Always recalculate directly from pieces
         return (int) pieces.stream().filter(Piece::isFinished).count();
     }
-
-    // removed pieceFinished() method
-    // public void pieceFinished() { }
 
     public boolean isWinner() {
         return getFinishedPiecesCount() == pieces.size();
@@ -50,7 +44,7 @@ public class Team {
 
     public List<Piece> getPlayablePieces() {
         List<Piece> playable = new ArrayList<>();
-        for (Piece piece : pieces) {
+        for (Piece piece : this.pieces) {
             if (!piece.isFinished()) {
                 playable.add(piece);
             }
