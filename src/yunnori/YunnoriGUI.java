@@ -57,18 +57,18 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         // roller = new YunnoriRoller(isTestMode); // Moved
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 1100);
+        setSize(1780, 1200);
         setLayout(new BorderLayout());
 
         // Board Panel will be created after game logic is initialized
         // boardPanel = new BoardPanel(board, teams, this); // Moved
         // add(boardPanel, BorderLayout.CENTER); // Moved
 
-        messageArea = new JTextArea(10, 50);
+        messageArea = new JTextArea(70, 50);
         messageArea.setEditable(false);
-        messageArea.setFont(new Font("Monospaced", Font.PLAIN, 16));
+        messageArea.setFont(new Font("Monospaced", Font.PLAIN, 20));
         JScrollPane scrollPane = new JScrollPane(messageArea);
-        add(scrollPane, BorderLayout.SOUTH);
+        add(scrollPane, BorderLayout.EAST);
 
         controlPanel = new JPanel(); // Use FlowLayout by default
         rollButton = new JButton("Roll");
@@ -114,7 +114,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
             remove(boardPanel);
         }
         boardPanel = new BoardPanel(board, teams, this);
-        boardPanel.setPreferredSize(new Dimension(1000, 1000));
+        boardPanel.setPreferredSize(new Dimension(1000, 1100));
         add(boardPanel, BorderLayout.CENTER); // Add (or re-add) to the frame
         revalidate(); // Important after adding/removing components
         repaint(); // Ensure the new board panel is drawn
