@@ -19,6 +19,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
     private JPanel controlPanel;
     private JButton quitButton;
     private JButton restartButton;
+    private BoardType boardType;
 
     // Game Logic and State (fields remain the same)
     private Board board;
@@ -44,7 +45,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
     private List<Piece> piecesAtClickedStack = new ArrayList<>();
 
     // Constructor
-    public YunnoriGUI(int numTeams, int numPieces, boolean isTestMode) {
+    public YunnoriGUI(int numTeams, int numPieces, boolean isTestMode, BoardType boardType) {
         super("Yunnori Game");
         this.numTeams = numTeams; // Store for restart
         this.numPieces = numPieces; // Store for restart
@@ -93,16 +94,18 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         controlPanel.add(quitButton);
 
         add(controlPanel, BorderLayout.NORTH);
+        this.initializeGameLogicAndBoardPanel(boardType);
 
         // Initialize and start the game
-        initializeGameLogicAndBoardPanel(); // Creates board, teams, roller, and boardPanel
+        initializeGameLogicAndBoardPanel(boardType);
         setVisible(true); // Make window visible AFTER all components are added
         startGame(); // Start the first turn logic
     }
 
     // New method to initialize/re-initialize game logic components and BoardPanel
-    private void initializeGameLogicAndBoardPanel() {
-        board = new Board();
+    private void initializeGameLogicAndBoardPanel(BoardType boardType) {
+        //board = new Board();
+        board = new Board(boardType);
         teams = new ArrayList<>();
         for (int i = 0; i < numTeams; i++) {
             teams.add(new Team(i, numPieces));
@@ -395,13 +398,14 @@ public class YunnoriGUI extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+
         if (e.getSource() == quitButton) {
             System.exit(0);
         } else if (e.getSource() == restartButton) {
             // Restart is allowed only if game is over
             if (currentState == GameState.GAME_OVER) {
                 updateStatus("\n--- Restarting Game ---");
-                initializeGameLogicAndBoardPanel();
+                initializeGameLogicAndBoardPanel(this.boardType);
                 startGame();
             }
         } else if (currentState == GameState.GAME_OVER) {
@@ -545,11 +549,37 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         checkPlayableMoves();
     }
 
+    private void initializeGameLogicAndBoardPanel() {
+        initializeGameLogicAndBoardPanel(this.boardType);
+    }
+
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 try {
+                    String[] boardTypes = {"square", "pentagon", "hexagon"};
+                    int boardTypeIndex = JOptionPane.showOptionDialog(
+                            null,
+                            "Select the type of Yutnori board:",
+                            "Board Type",
+                            JOptionPane.DEFAULT_OPTION,
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            boardTypes,
+                            boardTypes[0]
+                    );
+                    if (boardTypeIndex == JOptionPane.CLOSED_OPTION)
+                        System.exit(0);
+
+                    BoardType boardType;
+                    switch (boardTypeIndex) {
+                        case 1: boardType = BoardType.PENTAGON; break;
+                        case 2: boardType = BoardType.HEXAGON; break;
+                        default: boardType = BoardType.RECTANGLE; break;
+                    }
+
                     String teamsInput = JOptionPane.showInputDialog(null, "Enter number of teams (2-4):", "Game Setup",
                             JOptionPane.QUESTION_MESSAGE);
                     if (teamsInput == null)
@@ -573,7 +603,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
                     boolean isTestMode = (testModeOption == JOptionPane.YES_OPTION);
 
                     try {
-                        new YunnoriGUI(numTeams, numPieces, isTestMode);
+                        new YunnoriGUI(numTeams, numPieces, isTestMode, boardType); // boardType 전달!
                     } catch (Exception e) {
                         System.err.println("\n--- An error occurred during GUI setup or game initialization ---");
                         e.printStackTrace();
