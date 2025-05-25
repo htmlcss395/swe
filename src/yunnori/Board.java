@@ -17,7 +17,6 @@ public class Board {
 
     private BoardPoint[] boardPoints = new BoardPoint[40]; // Indices 0-31
 
-
     private BoardType boardType;
 
     public Board(BoardType boardType) {
@@ -27,11 +26,9 @@ public class Board {
 
     public Board() {
         this(BoardType.RECTANGLE);
-         //
     }
 
     private void initializeBoardPoints() {
-
 
         switch (boardType) {
             case RECTANGLE: {
@@ -141,48 +138,44 @@ public class Board {
                 for (int i = 0; i < 5; i++) {
                     int start = i;
                     int base = 5 + i * 4;
-                    edges.add(new int[]{start, base});
-                    edges.add(new int[]{base, base + 1});
-                    edges.add(new int[]{base + 1, base + 2});
-                    edges.add(new int[]{base + 2, base + 3});
+                    edges.add(new int[] { start, base });
+                    edges.add(new int[] { base, base + 1 });
+                    edges.add(new int[] { base + 1, base + 2 });
+                    edges.add(new int[] { base + 2, base + 3 });
                     int next = (i + 1) % 5;
-                    edges.add(new int[]{base + 3, next});
+                    edges.add(new int[] { base + 3, next });
                 }
 
                 for (int i = 0; i < 5; i++) {
                     int mid1 = 26 + i * 2;
                     int mid2 = mid1 + 1;
-                    edges.add(new int[]{25, mid1});
-                    edges.add(new int[]{mid1, mid2});
-                    edges.add(new int[]{mid2, i});
+                    edges.add(new int[] { 25, mid1 });
+                    edges.add(new int[] { mid1, mid2 });
+                    edges.add(new int[] { mid2, i });
                 }
 
-          //      this.PentagonEdges = edges;
+                // this.PentagonEdges = edges;
                 break;
             }
 
-
-
-
             case HEXAGON: {
-//                int cx = (int) (m + os / 2);
-//                int cy = (int) (m + os / 2);
-//                int hex_r = (int) (os * 0.40);
-//
-//                for (int i = 0; i < 6; i++) {
-//                    double angle = -Math.PI / 2 + 2 * Math.PI * i / 6;
-//                    int x = (int) (cx + hex_r * Math.cos(angle));
-//                    int y = (int) (cy + hex_r * Math.sin(angle));
-//                    boardPoints[i] = new BoardPoint(x, y);
-//                }
-//                boardPoints[6] = new BoardPoint(cx, cy);
-//
-//                // TODO: 육각형의 점 분리 등을 추가
-//                break;
+                // int cx = (int) (m + os / 2);
+                // int cy = (int) (m + os / 2);
+                // int hex_r = (int) (os * 0.40);
+                //
+                // for (int i = 0; i < 6; i++) {
+                // double angle = -Math.PI / 2 + 2 * Math.PI * i / 6;
+                // int x = (int) (cx + hex_r * Math.cos(angle));
+                // int y = (int) (cy + hex_r * Math.sin(angle));
+                // boardPoints[i] = new BoardPoint(x, y);
+                // }
+                // boardPoints[6] = new BoardPoint(cx, cy);
+                //
+                // // TODO: 육각형의 점 분리 등을 추가
+                // break;
             }
         }
     }
-
 
     public BoardPoint getBoardPoint(int index) {
         if (index >= 0 && index <= 31) {
@@ -276,25 +269,31 @@ public class Board {
     }
 
     public List<Piece> findOpponentPiecesAt(int targetPosition, Team currentPlayerTeam, List<Team> allTeams) {
-        List<Piece> caughtPieces = new ArrayList<>();
-        if (targetPosition == 0 || targetPosition == 31) {
-            return caughtPieces;
+        List<Piece> opponentLeadersOrIndividualsAtPos = new ArrayList<>();
+        if (targetPosition == 0 || targetPosition == 31) { // No catches at start/finish
+            return opponentLeadersOrIndividualsAtPos;
         }
         for (Team team : allTeams) {
             if (team.getId() != currentPlayerTeam.getId()) {
-                caughtPieces.addAll(team.getPiecesAt(targetPosition));
+                // Use getInteractivePiecesAt to get only leaders or individual pieces of the
+                // opponent team
+                opponentLeadersOrIndividualsAtPos.addAll(team.getInteractivePiecesAt(targetPosition));
             }
         }
-        return caughtPieces;
+        return opponentLeadersOrIndividualsAtPos;
     }
 
     public void resetPiecesToStart(List<Piece> piecesToReset) {
+        // The Piece.reset() method now handles detaching from groups and resetting
+        // stacked pieces if it's a leader.
         for (Piece piece : piecesToReset) {
             piece.reset();
         }
     }
 
     public boolean isValidMoveStart(Piece piece, int steps) {
+        // piece.canMove() now correctly checks if the piece is stacked (and thus
+        // unmovable independently)
         return piece.canMove(steps);
     }
 }

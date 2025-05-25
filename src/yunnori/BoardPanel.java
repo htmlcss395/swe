@@ -48,10 +48,10 @@ public class BoardPanel extends JPanel {
         int clickX = e.getX();
         int clickY = e.getY();
 
-        for (int i = 0; i <= 31; i++) {
+        for (int i = 0; i <= 31; i++) { // Iterate through all board points
             Board.BoardPoint pointCoords = board.getBoardPoint(i);
             if (pointCoords != null) {
-                int pointClickArea = pointSize * 3;
+                int pointClickArea = pointSize * 3; // Increased click area for easier selection
                 int pointDrawX = pointCoords.x - pointClickArea / 2;
                 int pointDrawY = pointCoords.y - pointClickArea / 2;
                 int buffer = 10;
@@ -59,25 +59,42 @@ public class BoardPanel extends JPanel {
                 if (clickX >= pointDrawX - buffer && clickX <= pointDrawX + pointClickArea + buffer &&
                         clickY >= pointDrawY - buffer && clickY <= pointDrawY + pointClickArea + buffer) {
 
-                    List<Piece> piecesAtThisPoint = new ArrayList<>();
+                    List<Piece> interactivePiecesAtThisPoint = new ArrayList<>();
                     for (Team team : teams) {
-                        for (Piece piece : team.getPieces()) {
-                            if (!piece.isFinished() && piece.getCurrentPositionIndex() == i) {
-                                piecesAtThisPoint.add(piece);
-                            }
-                        }
+                        // Get leaders or individuals at this visual point
+                        interactivePiecesAtThisPoint.addAll(team.getInteractivePiecesAt(i));
                     }
 
-                    if (!piecesAtThisPoint.isEmpty()) {
-                        guiController.pieceStackClicked(piecesAtThisPoint, clickX, clickY);
-                        return;
+                    if (!interactivePiecesAtThisPoint.isEmpty()) {
+                        guiController.pieceStackClicked(interactivePiecesAtThisPoint, clickX, clickY);
+                        return; // Click handled
                     } else {
-                        break;
+                        // Clicked on an empty board point, let guiController handle if needed
+                        // (though current boardClicked is more for deselection)
+                        // If we stop iterating here, clicks on empty points with no pieces nearby won't
+                        // deselect.
+                        // So, we might want to continue checking or call boardClicked only if no piece
+                        // stack is found after checking all points.
+                        // For now, if a point is clicked, and it has pieces, we handle it. If not, the
+                        // click falls through.
+                        // This means guiController.boardClicked might be called if the loop finishes
+                        // without finding pieces.
+                        // Let's break if a point is identified, piece or not, to avoid multiple point
+                        // processing.
+                        // The original logic was to break; if pieces were found.
+                        // If no pieces, it would fall through to boardClicked.
+                        // This seems fine. If point is empty, this loop doesn't find pieces, falls to
+                        // boardClicked.
+                        break; // Found the clicked point, whether it has pieces or not.
+                               // If it had pieces, it's handled. If not, loop continues or exits.
+                               // This break ensures we only process one "board point" per click.
                     }
                 }
             }
         }
-        guiController.boardClicked(clickX, clickY);
+        // If loop completes without returning (i.e. no interactive piece found at any
+        // specific point that matched click area)
+        guiController.boardClicked(clickX, clickY); // General board click (e.g., for deselection)
     }
 
     @Override
@@ -92,6 +109,7 @@ public class BoardPanel extends JPanel {
 
         for (int i = 0; i < 20; i++)
             autoDrawLine(g2d, i, i + 1);
+
         autoDrawLine(g2d, 0, 31);
         autoDrawLine(g2d, 5, 21);
         autoDrawLine(g2d, 21, 22);
@@ -209,31 +227,47 @@ public class BoardPanel extends JPanel {
             else if (team.getId() == 3)
                 teamColor = Color.ORANGE;
 
+            // Iterate over *all* pieces to find leaders or unstacked pieces to draw
             for (Piece piece : team.getPieces()) {
-                if (!piece.isFinished()) {
-                    Board.BoardPoint point = board.getBoardPoint(piece.getCurrentPositionIndex());
-                    if (point != null) {
-                        Color originalPieceDrawColor = g2d.getColor();
-                        g2d.setColor(teamColor);
+                if (piece.isFinished() || piece.isStacked()) {
+                    // Don't draw finished pieces on the board path
+                    // Don't draw pieces that are stacked (they are represented by their leader)
+                    continue;
+                }
 
-                        if (piece == selectedPiece) {
-                            Color tempHighlightColor = g2d.getColor();
-                            g2d.setColor(Color.CYAN);
-                            int highlightSize = pieceSize + 10;
-                            g2d.fillOval(point.x - highlightSize / 2, point.y - highlightSize / 2, highlightSize,
-                                    highlightSize);
-                            g2d.setColor(tempHighlightColor);
-                        }
-                        g2d.fillOval(point.x - pieceSize / 2, point.y - pieceSize / 2, pieceSize, pieceSize);
-                        g2d.setColor(Color.WHITE);
-                        if (team.getId() == 2)
-                            g2d.setColor(Color.DARK_GRAY);
-                        String pieceText = "" + (piece.getId() + 1);
-                        FontMetrics fm = g2d.getFontMetrics();
-                        int textX = point.x - fm.stringWidth(pieceText) / 2;
-                        int textY = point.y + fm.getAscent() / 2 - fm.getDescent() / 2;
-                        g2d.drawString(pieceText, textX, textY);
+                // Now 'piece' is either a leader or an un-stacked individual piece
+                Board.BoardPoint point = board.getBoardPoint(piece.getCurrentPositionIndex());
+                if (point != null) {
+                    g2d.setColor(teamColor);
+
+                    // Highlight if this piece/group is the one selected by the player for a move
+                    if (selectedPiece != null && selectedPiece == piece) { // selectedPiece is now a leader/individual
+                        Color tempHighlightColor = new Color(teamColor.getRed(), teamColor.getGreen(),
+                                teamColor.getBlue(), 100); // Lighter/transparent version
+                        g2d.setColor(tempHighlightColor);
+                        int highlightSize = pieceSize + 10;
+                        g2d.fillOval(point.x - highlightSize / 2, point.y - highlightSize / 2, highlightSize,
+                                highlightSize);
+                        g2d.setColor(teamColor); // Reset to original team color for the piece itself
                     }
+
+                    g2d.fillOval(point.x - pieceSize / 2, point.y - pieceSize / 2, pieceSize, pieceSize);
+
+                    // Text on piece
+                    g2d.setColor(Color.WHITE);
+                    if (team.getId() == 2)
+                        g2d.setColor(Color.DARK_GRAY); // Green team text
+
+                    String pieceText;
+                    if (piece.isGroupLeader()) {
+                        pieceText = "x" + piece.getGroupSize(); // e.g., "x3"
+                    } else {
+                        pieceText = "" + (piece.getId() + 1); // e.g., "1", "2"
+                    }
+                    FontMetrics fm = g2d.getFontMetrics();
+                    int textX = point.x - fm.stringWidth(pieceText) / 2;
+                    int textY = point.y + fm.getAscent() / 2 - fm.getDescent() / 2; // Center text
+                    g2d.drawString(pieceText, textX, textY);
                 }
             }
         }
