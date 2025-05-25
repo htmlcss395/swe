@@ -116,7 +116,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
             remove(boardPanel);
         }
         boardPanel = new BoardPanel(board, teams, this);
-        boardPanel.setPreferredSize(new Dimension(1000, 1100));
+        boardPanel.setPreferredSize(new Dimension(1150, 1100));
         add(boardPanel, BorderLayout.CENTER); // Add (or re-add) to the frame
         revalidate(); // Important after adding/removing components
         repaint(); // Ensure the new board panel is drawn
@@ -630,6 +630,16 @@ public class YunnoriGUI extends JFrame implements ActionListener {
             @Override
             public void run() {
                 try {
+                    // --- START: Add these UIManager settings for larger dialogs ---
+                    int dialogFontSize = 24; // Adjust this value as needed
+                    Font dialogFont = new Font("SansSerif", Font.PLAIN, dialogFontSize);
+                    Font dialogButtonFont = new Font("SansSerif", Font.BOLD, dialogFontSize - 2); // Slightly smaller
+                    UIManager.put("OptionPane.messageFont", dialogFont);
+                    UIManager.put("OptionPane.buttonFont", dialogButtonFont);
+                    UIManager.put("TextField.font", dialogFont); // For input dialogs
+                    UIManager.put("Label.font", dialogFont); // For labels within option panes
+                    UIManager.put("ComboBox.font", dialogFont);
+
                     String[] boardTypes = { "square", "pentagon", "hexagon" };
                     int boardTypeIndex = JOptionPane.showOptionDialog(
                             null,
