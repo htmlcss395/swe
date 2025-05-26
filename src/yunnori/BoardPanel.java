@@ -16,8 +16,8 @@ import java.awt.event.MouseEvent;
 public class BoardPanel extends JPanel {
     public Board board;
     private List<Team> teams;
-    private int pieceSize = 25; // scaled from 30
-    public int pointSize = 20; // scaled from 15
+    private int pieceSize = 30;
+    public int pointSize = 15;
 
     private YunnoriGUI guiController;
 
