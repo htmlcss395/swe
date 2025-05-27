@@ -37,7 +37,7 @@ public class Board {
         switch (boardType) {
             case RECTANGLE: {
                 double m = 50;
-                double os = 900;
+                double os = 1050;
                 double ps_outer = os / 5;
                 double ps_c_c = os / 6;
                 double ps_c_bl = os / 6;

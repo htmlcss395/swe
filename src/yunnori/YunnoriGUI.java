@@ -21,7 +21,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
     private JButton restartButton;
     private BoardType boardType;
 
-    // Game Logic and State (fields remain the same)
+    // Game Logic and State
     private Board board;
     private List<Team> teams;
     private YunnoriRoller roller;
@@ -117,7 +117,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
             remove(boardPanel);
         }
         boardPanel = new BoardPanel(board, teams, this);
-        boardPanel.setPreferredSize(new Dimension(1000, 1100));
+        boardPanel.setPreferredSize(new Dimension(1150, 1100));
         add(boardPanel, BorderLayout.CENTER); // Add (or re-add) to the frame
         revalidate(); // Important after adding/removing components
         repaint(); // Ensure the new board panel is drawn
@@ -178,27 +178,91 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         boardPanel.repaint();
     }
 
+
+
+
+
     private void executeMove(Piece pieceToMove, YunnoriRoll rollUsed) {
         int targetPosition = board.calculateTargetPosition(pieceToMove, rollUsed.getSteps());
         int oldPosition = pieceToMove.getCurrentPositionIndex();
         pieceToMove.moveTo(targetPosition);
 
+
+        // Temporarily store pieces pieceToMove is currently carrying.
+        // This is because pieceToMove might merge with another group, and its current
+        // identity as a leader changes.
+        // The addToStack logic in Piece.java is designed to handle merging.
+        // No need to detach here if addToStack correctly absorbs.
+
+        pieceToMove.moveTo(targetPosition); // Moves pieceToMove and its entire stack (if any)
+
+        String moveMsg = teams.get(currentPlayerIndex) + " " + pieceToMove.toString() + " moved from " + oldPosition
+                + " to " + pieceToMove.getCurrentPositionIndex() + " with " + rollUsed.name() + ".";
+        updateStatus(moveMsg);
+
+        // --- Grouping Logic ---
+        // Only group if not at start/finish and not already finished
+        if (pieceToMove.getCurrentPositionIndex() > 0 && pieceToMove.getCurrentPositionIndex() < 31
+                && !pieceToMove.isFinished()) {
+            Team currentTeam = teams.get(currentPlayerIndex);
+            List<Piece> friendlyPiecesAtTarget = new ArrayList<>();
+            // Find other friendly leaders or individuals at the target position
+            for (Piece p : currentTeam.getInteractivePiecesAt(targetPosition)) {
+                if (p != pieceToMove) { // Don't try to group with itself
+                    friendlyPiecesAtTarget.add(p);
+                }
+            }
+
+            if (!friendlyPiecesAtTarget.isEmpty()) {
+                String existingPieceNames = friendlyPiecesAtTarget.stream()
+                        .map(Piece::toString) // Piece.toString() now shows group size
+                        .collect(Collectors.joining(", "));
+                int choice = JOptionPane.showConfirmDialog(this,
+                        "You landed on your own piece(s): " + existingPieceNames +
+                                ".\nDo you want " + pieceToMove.toString() + " to lead/join this stack?",
+                        "Group Pieces?", JOptionPane.YES_NO_OPTION);
+
+                if (choice == JOptionPane.YES_OPTION) {
+                    // pieceToMove will attempt to become the leader of the pieces it landed on.
+                    // If pieceToMove was already a leader, its existing stack is part of it.
+                    // If any friendlyPiecesAtTarget were leaders, their stacks are merged under
+                    // pieceToMove by addToStack.
+                    for (Piece existingPiece : friendlyPiecesAtTarget) {
+                        pieceToMove.addToStack(existingPiece); // This handles merging logic
+                    }
+                    updateStatus(pieceToMove.toString() + " now leads the stack at position " + targetPosition + ".");
+                }
+            }
+        }
+        // --- End Grouping Logic ---
+
+        // Check for catches only if the piece is on a catchable part of the board
         boolean caughtThisMove = false;
         if (pieceToMove.getCurrentPositionIndex() > 0 && pieceToMove.getCurrentPositionIndex() < 31) {
-            List<Piece> caughtOpponentPieces = board.findOpponentPiecesAt(pieceToMove.getCurrentPositionIndex(),
+         //   List<Piece> caughtOpponentPieces = board.findOpponentPiecesAt(pieceToMove.getCurrentPositionIndex(),
+            // findOpponentPiecesAt returns leaders or individual opponent pieces
+            List<Piece> caughtOpponentLeadersOrIndividuals = board.findOpponentPiecesAt(
+                    pieceToMove.getCurrentPositionIndex(),
                     teams.get(currentPlayerIndex), teams);
-            if (!caughtOpponentPieces.isEmpty()) {
-                StringBuilder sb = new StringBuilder(teams.get(currentPlayerIndex) + " caught ");
-                for (Piece p : caughtOpponentPieces) {
-                    sb.append(teams.get(p.getTeamId()).toString()).append(" ").append(p.toString()).append(" ");
+            if (!caughtOpponentLeadersOrIndividuals.isEmpty()) {
+                StringBuilder sb = new StringBuilder(pieceToMove.toString() + " caught: "); // Current player's piece
+                List<Piece> allPiecesActuallyReset = new ArrayList<>();
+
+                for (Piece opponentLeaderOrInd : caughtOpponentLeadersOrIndividuals) {
+                    sb.append(opponentLeaderOrInd.toString()).append(" (Team ")
+                            .append(opponentLeaderOrInd.getTeamId() + 1).append(") ");
+                    allPiecesActuallyReset.add(opponentLeaderOrInd); // The leader/individual itself
+                    // If it was a leader, its reset() will handle its stack.
                 }
                 sb.append("at position ").append(pieceToMove.getCurrentPositionIndex()).append("!");
                 updateStatus(sb.toString());
-                board.resetPiecesToStart(caughtOpponentPieces);
+                board.resetPiecesToStart(allPiecesActuallyReset); // Resetting leaders will reset their stacks
+
+                board.resetPiecesToStart(allPiecesActuallyReset); // Resetting leaders will reset their stacks
                 caughtThisMove = true;
             }
         }
-        boolean finished = pieceToMove.isFinished();
+        boolean finished = pieceToMove.isFinished(); // This checks the leader
         if (finished) {
             updateStatus(teams.get(currentPlayerIndex) + " " + pieceToMove.toString() + " finished!");
         } else if (!caughtThisMove) {
@@ -224,11 +288,11 @@ public class YunnoriGUI extends JFrame implements ActionListener {
 
     // checkPlayableMoves method (remains the same)
     private void checkPlayableMoves() {
-        List<Piece> playablePieces = teams.get(currentPlayerIndex).getPlayablePieces();
+        List<Piece> playableLeadersOrIndividuals = teams.get(currentPlayerIndex).getPlayablePieces();
         List<Piece> piecesWithValidMove = new ArrayList<>();
         if (!rollsToProcess.isEmpty()) {
             YunnoriRoll currentRoll = rollsToProcess.get(0);
-            for (Piece piece : playablePieces) {
+            for (Piece piece : playableLeadersOrIndividuals) {
                 if (board.isValidMoveStart(piece, currentRoll.getSteps())) {
                     piecesWithValidMove.add(piece);
                 }
@@ -237,7 +301,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
 
         if (piecesWithValidMove.isEmpty() && !rollsToProcess.isEmpty()) {
             YunnoriRoll skippedRoll = rollsToProcess.remove(0);
-            updateStatus(teams.get(currentPlayerIndex) + " has no piece that can move with " + skippedRoll
+            updateStatus(teams.get(currentPlayerIndex) + " has no piece/group that can move with " + skippedRoll
                     + ". Skipping roll.");
             if (rollsToProcess.isEmpty()) {
                 concludeTurnSegment();
@@ -249,76 +313,81 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         } else if (!piecesWithValidMove.isEmpty()) {
             currentState = GameState.WAITING_FOR_PIECE_SELECTION;
             updateStatus("Rolls to process: "
-                    + rollsToProcess.stream().map(Enum::name).collect(Collectors.joining(", ")) + ". Select a piece.");
-            List<Integer> highlightPositions = new ArrayList<>();
+                    + rollsToProcess.stream().map(Enum::name).collect(Collectors.joining(", "))
+                    + ". Select a piece/group.");            List<Integer> highlightPositions = new ArrayList<>();
             for (Piece p : piecesWithValidMove) {
                 highlightPositions.add(p.getCurrentPositionIndex());
             }
-            boardPanel.setHighlight(null, highlightPositions);
+            boardPanel.setHighlight(null, highlightPositions);// Highlight positions of movable leaders/individuals
             boardPanel.repaint();
-        } else {
+        } else {// No rolls left or no playable moves with remaining rolls
             concludeTurnSegment();
         }
     }
 
-    // pieceClicked method (remains the same - auto moves)
-    public void pieceClicked(Piece piece) {
+    // pieceClicked is called when a piece is chosen (either directly or from a
+    // stack prompt)
+        public void pieceClicked(Piece piece) {
         if (currentState == GameState.WAITING_FOR_PIECE_SELECTION
                 || currentState == GameState.WAITING_FOR_STACK_SELECTION) {
             if (piece.getTeamId() == currentPlayerIndex && !rollsToProcess.isEmpty()) {
                 YunnoriRoll currentRoll = rollsToProcess.get(0);
                 if (board.isValidMoveStart(piece, currentRoll.getSteps())) {
-                    updateStatus("Piece " + piece + " selected. Moving automatically with " + currentRoll.name() + ".");
+                    updateStatus("Piece/group " + piece + " selected. Moving with " + currentRoll.name() + ".");
                     rollsToProcess.remove(0);
                     executeMove(piece, currentRoll);
                     boardPanel.setHighlight(null, null);
                 } else {
-                    updateStatus("Piece " + piece + " cannot move with " + currentRoll + ". Choose another piece.");
+                    updateStatus("Piece/group " + piece + " cannot move with " + currentRoll + ". Choose another.");
                     if (currentState == GameState.WAITING_FOR_STACK_SELECTION) {
                         currentState = GameState.WAITING_FOR_PIECE_SELECTION;
                         checkPlayableMoves();
                     }
                 }
             } else {
-                updateStatus("That's not your piece!");
+                updateStatus("That's not your piece/group or no rolls available!");
                 if (currentState == GameState.WAITING_FOR_STACK_SELECTION) {
                     currentState = GameState.WAITING_FOR_PIECE_SELECTION;
                     checkPlayableMoves();
                 }
             }
         } else {
-            updateStatus("Wait for your turn to select a piece, or roll first.");
+            updateStatus("Wait for your turn to select a piece/group, or roll first.");
         }
         boardPanel.repaint();
     }
 
     // pieceStackClicked method (remains the same)
     public void pieceStackClicked(List<Piece> piecesAtStack, int clickX, int clickY) {
+        // piecesAtStack from BoardPanel now contains leaders or individual pieces at
+        // the clicked visual point.
+        // These are already filtered by Team.getInteractivePiecesAt().
         if (currentState == GameState.WAITING_FOR_PIECE_SELECTION) {
-            List<Piece> playablePiecesAtStack = new ArrayList<>();
+            List<Piece> playablePiecesOrGroupsAtStack = new ArrayList<>();
             if (!rollsToProcess.isEmpty()) {
                 YunnoriRoll currentRoll = rollsToProcess.get(0);
-                for (Piece p : piecesAtStack) {
-                    if (!p.isFinished() && p.getTeamId() == currentPlayerIndex
-                            && board.isValidMoveStart(p, currentRoll.getSteps())) {
-                        playablePiecesAtStack.add(p);
+                for (Piece p : piecesAtStack) { // p is a leader or individual
+                    if (p.getTeamId() == currentPlayerIndex && board.isValidMoveStart(p, currentRoll.getSteps())) {
+                        playablePiecesOrGroupsAtStack.add(p);
                     }
                 }
             }
-            if (playablePiecesAtStack.isEmpty()) {
-                updateStatus("No playable piece in that stack for " + teams.get(currentPlayerIndex) + " with "
+            if (playablePiecesOrGroupsAtStack.isEmpty()) {
+                updateStatus("No playable piece/group in that stack for " + teams.get(currentPlayerIndex) + " with "
                         + (rollsToProcess.isEmpty() ? "no roll" : rollsToProcess.get(0).name()) + ".");
-            } else if (playablePiecesAtStack.size() == 1) {
-                updateStatus("Auto-selecting the only playable piece in the stack.");
-                pieceClicked(playablePiecesAtStack.get(0));
+            } else if (playablePiecesOrGroupsAtStack.size() == 1) {
+                updateStatus("Auto-selecting the only playable piece/group: " + playablePiecesOrGroupsAtStack.get(0));
+                pieceClicked(playablePiecesOrGroupsAtStack.get(0)); // Pass the leader/individual
             } else {
-                this.piecesAtClickedStack = playablePiecesAtStack;
+                // Multiple leaders/individuals of the current player are at the same visual
+                // spot and are playable
+                this.piecesAtClickedStack = playablePiecesOrGroupsAtStack;
                 currentState = GameState.WAITING_FOR_STACK_SELECTION;
-                updateStatus("Multiple playable pieces at this point. Choose one:");
-                promptForStackSelection();
+                updateStatus("Multiple playable pieces/groups at this point. Choose one:");
+                promptForStackSelection(); // JOptionPane will use Piece.toString() which shows group size
             }
         } else {
-            updateStatus("Wait for your turn to select a piece.");
+            updateStatus("Wait for your turn to select a piece/group.");
         }
         boardPanel.repaint();
     }
@@ -559,8 +628,17 @@ public class YunnoriGUI extends JFrame implements ActionListener {
             @Override
             public void run() {
                 try {
-                    String[] boardTypes = {"square", "pentagon", "hexagon"};
-                    int boardTypeIndex = JOptionPane.showOptionDialog(
+                    // --- START: Add these UIManager settings for larger dialogs ---
+                    int dialogFontSize = 24; // Adjust this value as needed
+                    Font dialogFont = new Font("SansSerif", Font.PLAIN, dialogFontSize);
+                    Font dialogButtonFont = new Font("SansSerif", Font.BOLD, dialogFontSize - 2); // Slightly smaller
+                    UIManager.put("OptionPane.messageFont", dialogFont);
+                    UIManager.put("OptionPane.buttonFont", dialogButtonFont);
+                    UIManager.put("TextField.font", dialogFont); // For input dialogs
+                    UIManager.put("Label.font", dialogFont); // For labels within option panes
+                    UIManager.put("ComboBox.font", dialogFont);
+
+                    String[] boardTypes = { "square", "pentagon", "hexagon" };                    int boardTypeIndex = JOptionPane.showOptionDialog(
                             null,
                             "Select the type of Yutnori board:",
                             "Board Type",
@@ -568,16 +646,21 @@ public class YunnoriGUI extends JFrame implements ActionListener {
                             JOptionPane.QUESTION_MESSAGE,
                             null,
                             boardTypes,
-                            boardTypes[0]
-                    );
+                            boardTypes[0]);
                     if (boardTypeIndex == JOptionPane.CLOSED_OPTION)
                         System.exit(0);
 
                     BoardType boardType;
                     switch (boardTypeIndex) {
-                        case 1: boardType = BoardType.PENTAGON; break;
-                        case 2: boardType = BoardType.HEXAGON; break;
-                        default: boardType = BoardType.RECTANGLE; break;
+                        case 1:
+                            boardType = BoardType.PENTAGON;
+                            break;
+                        case 2:
+                            boardType = BoardType.HEXAGON;
+                            break;
+                        default:
+                            boardType = BoardType.RECTANGLE;
+                            break;
                     }
 
                     String teamsInput = JOptionPane.showInputDialog(null, "Enter number of teams (2-4):", "Game Setup",
