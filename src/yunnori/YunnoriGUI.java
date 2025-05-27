@@ -73,21 +73,21 @@ public class YunnoriGUI extends JFrame implements ActionListener {
 
         controlPanel = new JPanel(); // Use FlowLayout by default
         rollButton = new JButton("Roll");
-        rollButton.setFont(new Font("Arial", Font.BOLD, 20));
+        rollButton.setFont(new Font("Gulim", Font.BOLD, 20));
         rollButton.setPreferredSize(new Dimension(150, 50));
         rollButton.addActionListener(this);
         controlPanel.add(rollButton);
 
         // Initialize and add Quit/Restart buttons
         restartButton = new JButton("Restart");
-        restartButton.setFont(new Font("Arial", Font.BOLD, 16));
+        restartButton.setFont(new Font("Gulim", Font.BOLD, 16));
         restartButton.setPreferredSize(new Dimension(120, 40));
         restartButton.addActionListener(this);
         restartButton.setEnabled(false); // Initially disabled
         controlPanel.add(restartButton);
 
         quitButton = new JButton("Quit");
-        quitButton.setFont(new Font("Arial", Font.BOLD, 16));
+        quitButton.setFont(new Font("Gulim", Font.BOLD, 16));
         quitButton.setPreferredSize(new Dimension(120, 40));
         quitButton.addActionListener(this);
         quitButton.setEnabled(true); // Always enabled

@@ -1,4 +1,4 @@
-package src.yunnori.edges;
+package src.yunnori;
 
 import java.util.List;
 import java.util.Map;

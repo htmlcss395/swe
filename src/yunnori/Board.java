@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Board {
+    public ArrayList<int[]> pentagonEdges;  // <= 이거 선언!
 
     public static class BoardPoint {
         public int x;
@@ -27,7 +28,7 @@ public class Board {
 
     public Board() {
         this(BoardType.RECTANGLE);
-         //
+        //
     }
 
     private void initializeBoardPoints() {
@@ -96,100 +97,155 @@ public class Board {
                 boardPoints[31] = new BoardPoint((int) (m + os + ps_outer), (int) (m + os));
                 break;
             }
+
+
             case PENTAGON: {
-                double m = 50;
-                double os = 900;
-                int cx = (int) (m + os / 2);
-                int cy = (int) (m + os / 2);
-                int pent_r_outer = (int) (os * 0.40);
-                int pent_r_in = (int) (os * 0.23);
+                double m = 50, os = 900;
+                int cx = (int)(m + os / 2),  cy = (int)(m + os / 2);
+                int r  = (int)(os * 0.40);          // 외곽 반지름
 
-                for (int i = 0; i < 5; i++) {
-                    double angle = Math.PI / 2 + 2 * Math.PI * i / 5;
-                    int x = (int) (cx + pent_r_outer * Math.cos(angle));
-                    int y = (int) (cy - pent_r_outer * Math.sin(angle));
-                    boardPoints[i] = new BoardPoint(x, y);
-                }
+                boardPoints = new BoardPoint[36];   // 0-24 외곽, 25-34 내부, 35 센터
 
-                int idx = 5;
-                for (int i = 0; i < 5; i++) {
-                    double angle1 = Math.PI / 2 + 2 * Math.PI * i / 5;
-                    double angle2 = Math.PI / 2 + 2 * Math.PI * ((i + 1) % 5) / 5;
+                double startAng = Math.PI/2 + 2*Math.PI/5;
+                for (int v = 0; v < 5; v++) {
+                    double th1 = startAng + 2*Math.PI*v/5;
+                    double th2 = startAng + 2*Math.PI*(v+1)/5;
+                    int base = v * 5;                           // 0,5,10,15,20
+
+                    boardPoints[base] = new BoardPoint(
+                            (int)(cx + r*Math.cos(th1)),
+                            (int)(cy - r*Math.sin(th1)));
+
                     for (int j = 1; j <= 4; j++) {
-                        double frac = j / 5.0;
-                        int x = (int) (cx + pent_r_outer * ((1 - frac) * Math.cos(angle1) + frac * Math.cos(angle2)));
-                        int y = (int) (cy - pent_r_outer * ((1 - frac) * Math.sin(angle1) + frac * Math.sin(angle2)));
-                        boardPoints[idx++] = new BoardPoint(x, y);
+                        double t = j / 5.0;
+                        boardPoints[base + j] = new BoardPoint(
+                                (int)(cx + r*((1-t)*Math.cos(th1)+t*Math.cos(th2))),
+                                (int)(cy - r*((1-t)*Math.sin(th1)+t*Math.sin(th2))));
                     }
                 }
 
-                boardPoints[25] = new BoardPoint(cx, cy);
+                boardPoints[35] = new BoardPoint(cx, cy);            // C = 35
 
-                idx = 26;
-                for (int i = 0; i < 5; i++) {
-                    double angle = Math.PI / 2 + 2 * Math.PI * i / 5;
-                    for (int j = 1; j <= 2; j++) {
-                        double frac = j / 3.0;
-                        int x = (int) (cx + (pent_r_in * frac) * Math.cos(angle));
-                        int y = (int) (cy - (pent_r_in * frac) * Math.sin(angle));
-                        boardPoints[idx++] = new BoardPoint(x, y);
-                    }
+                for (int v = 0; v < 5; v++) {
+                    int vertex = v * 5;          // 0,5,10,15,20
+                    int idx1   = 25 + v;         // 25‥29  (1/3)
+                    int idx2   = 30 + v;         // 30‥34  (2/3)
+
+                    BoardPoint pV = boardPoints[vertex];
+                    boardPoints[idx1] = new BoardPoint(
+                            (pV.x*2 + cx) / 3,
+                            (pV.y*2 + cy) / 3);
+                    boardPoints[idx2] = new BoardPoint(
+                            (pV.x   + cx*2) / 3,
+                            (pV.y   + cy*2) / 3);
                 }
 
                 ArrayList<int[]> edges = new ArrayList<>();
 
-                for (int i = 0; i < 5; i++) {
-                    int start = i;
-                    int base = 5 + i * 4;
-                    edges.add(new int[]{start, base});
-                    edges.add(new int[]{base, base + 1});
-                    edges.add(new int[]{base + 1, base + 2});
-                    edges.add(new int[]{base + 2, base + 3});
-                    int next = (i + 1) % 5;
-                    edges.add(new int[]{base + 3, next});
-                }
+                // 외곽 순환
+                for (int i = 0; i < 25; i++)
+                    edges.add(new int[]{i, (i + 1) % 25});
 
-                for (int i = 0; i < 5; i++) {
-                    int mid1 = 26 + i * 2;
-                    int mid2 = mid1 + 1;
-                    edges.add(new int[]{25, mid1});
-                    edges.add(new int[]{mid1, mid2});
-                    edges.add(new int[]{mid2, i});
+                // 꼭짓점 -> idx1 -> idx2 -> 센터
+                for (int v = 0; v < 5; v++) {
+                    int vertex = v * 5;
+                    int idx1 = 25 + v;
+                    int idx2 = 30 + v;
+                    edges.add(new int[]{vertex, idx1});
+                    edges.add(new int[]{idx1 , idx2});
+                    edges.add(new int[]{idx2 , 35});
                 }
-
-          //      this.PentagonEdges = edges;
+                this.pentagonEdges = edges;
                 break;
             }
 
 
 
 
+
+
+
+
+
+
+
+
             case HEXAGON: {
-//                int cx = (int) (m + os / 2);
-//                int cy = (int) (m + os / 2);
-//                int hex_r = (int) (os * 0.40);
-//
-//                for (int i = 0; i < 6; i++) {
-//                    double angle = -Math.PI / 2 + 2 * Math.PI * i / 6;
-//                    int x = (int) (cx + hex_r * Math.cos(angle));
-//                    int y = (int) (cy + hex_r * Math.sin(angle));
-//                    boardPoints[i] = new BoardPoint(x, y);
-//                }
-//                boardPoints[6] = new BoardPoint(cx, cy);
-//
-//                // TODO: 육각형의 점 분리 등을 추가
-//                break;
+                double m = 50, os = 900;
+                int cx = (int)(m + os/2),  cy = (int)(m + os/2);
+                int r  = (int)(os * 0.42);          // 외곽 반지름 (6각형이라 약간 키움)
+
+
+                boardPoints = new BoardPoint[43];   // 0~42
+
+                double startAng = Math.PI/2 + Math.PI/6 + 2*Math.PI/6;   // ‘왼쪽 위’가 0, 그다음 5가 왼쪽
+                for (int v = 0; v < 6; v++) {              // 꼭짓점 6
+                    double th1 = startAng + 2*Math.PI*v/6;
+                    double th2 = startAng + 2*Math.PI*(v+1)/6;
+                    int base = v*5;                        // 0,5,10,15,20,25
+
+                    boardPoints[base] = new BoardPoint(
+                            (int)(cx + r*Math.cos(th1)),
+                            (int)(cy - r*Math.sin(th1)));
+
+                    for (int j = 1; j <= 4; j++) {         // 변 사이 4칸
+                        double t = j/5.0;
+                        boardPoints[base+j] = new BoardPoint(
+                                (int)(cx + r*((1-t)*Math.cos(th1)+t*Math.cos(th2))),
+                                (int)(cy - r*((1-t)*Math.sin(th1)+t*Math.sin(th2))));
+                    }
+                }
+
+                boardPoints[42] = new BoardPoint(cx, cy);   // C
+
+                for (int v = 0; v < 6; v++) {
+                    int vertex = v*5;       // 0,5,10,15,20,25
+                    int idx1   = 30 + v;    // 30‥35 (1/3)
+                    int idx2   = 36 + v;    // 36‥41 (2/3)
+
+                    BoardPoint pV = boardPoints[vertex];
+                    boardPoints[idx1] = new BoardPoint(
+                            (pV.x*2 + cx)/3,
+                            (pV.y*2 + cy)/3);
+                    boardPoints[idx2] = new BoardPoint(
+                            (pV.x   + cx*2)/3,
+                            (pV.y   + cy*2)/3);
+                }
+
+                ArrayList<int[]> edges = new ArrayList<>();
+
+                for (int i = 0; i < 30; i++)
+                    edges.add(new int[]{i, (i+1)%30});
+
+                for (int v = 0; v < 6; v++) {
+                    int vertex = v*5;
+                    int idx1 = 30 + v;
+                    int idx2 = 36 + v;
+                    edges.add(new int[]{vertex, idx1});
+                    edges.add(new int[]{idx1 , idx2});
+                    edges.add(new int[]{idx2 , 42});
+                }
+
+
+                this.pentagonEdges = edges;   // 같은 필드 재활용
+                break;
             }
+
         }
     }
 
 
-    public BoardPoint getBoardPoint(int index) {
-        if (index >= 0 && index <= 31) {
-            return boardPoints[index];
-        }
-        return null;
+//    public BoardPoint getBoardPoint(int index) {
+//        if (index >= 0 && index <= 31) {
+//            return boardPoints[index];
+//        }
+//        return null;
+//    }
+
+    public BoardPoint getBoardPoint(int idx){
+        return (idx>=0 && idx<boardPoints.length) ? boardPoints[idx] : null;
     }
+
 
     private int getPreviousPosition(int currentPos) {
         if (currentPos == 0)
@@ -292,6 +348,19 @@ public class Board {
         for (Piece piece : piecesToReset) {
             piece.reset();
         }
+    }
+
+    public BoardType getBoardType() {
+        return this.boardType;
+    }
+
+    public int getPointCount() {
+        return boardPoints.length;
+    }
+
+
+    public List<int[]> getEdges() {
+        return this.pentagonEdges;   // 사각형이면 null
     }
 
     public boolean isValidMoveStart(Piece piece, int steps) {
