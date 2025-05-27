@@ -332,17 +332,18 @@ public class Board {
     }
 
     public List<Piece> findOpponentPiecesAt(int targetPosition, Team currentPlayerTeam, List<Team> allTeams) {
-        List<Piece> caughtPieces = new ArrayList<>();
+        List<Piece> opponentLeadersOrIndividualsAtPos = new ArrayList<>();
         if (targetPosition == 0 || targetPosition == 31) {
-            return caughtPieces;
+            return opponentLeadersOrIndividualsAtPos;
         }
         for (Team team : allTeams) {
             if (team.getId() != currentPlayerTeam.getId()) {
-                caughtPieces.addAll(team.getPiecesAt(targetPosition));
+                opponentLeadersOrIndividualsAtPos.addAll(team.getInteractivePiecesAt(targetPosition));
             }
         }
-        return caughtPieces;
+        return opponentLeadersOrIndividualsAtPos;
     }
+
 
     public void resetPiecesToStart(List<Piece> piecesToReset) {
         for (Piece piece : piecesToReset) {

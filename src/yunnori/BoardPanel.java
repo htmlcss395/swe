@@ -61,11 +61,8 @@ public class BoardPanel extends JPanel {
 
                     List<Piece> piecesAtThisPoint = new ArrayList<>();
                     for (Team team : teams) {
-                        for (Piece piece : team.getPieces()) {
-                            if (!piece.isFinished() && piece.getCurrentPositionIndex() == i) {
-                                piecesAtThisPoint.add(piece);
-                            }
-                        }
+                        piecesAtThisPoint.addAll(team.getInteractivePiecesAt(i));
+
                     }
 
                     if (!piecesAtThisPoint.isEmpty()) {
@@ -262,7 +259,7 @@ public class BoardPanel extends JPanel {
                 case 2 -> Color.GREEN;default -> Color.ORANGE;
             };
             for (Piece p : team.getPieces()) {
-                if (p.isFinished()) continue;
+                if (p.isFinished() || p.isStacked()) continue;
                 Board.BoardPoint pt = board.getBoardPoint(p.getCurrentPositionIndex());
                 if (pt == null) continue;
 
@@ -276,7 +273,7 @@ public class BoardPanel extends JPanel {
                 g2d.fillOval(pt.x - pieceSize/2, pt.y - pieceSize/2,
                         pieceSize, pieceSize);
                 g2d.setColor(team.getId()==2? Color.DARK_GRAY : Color.WHITE);
-                String txt = "" + (p.getId()+1);
+                String txt = p.isGroupLeader() ? "x" + p.getGroupSize() : "" + (p.getId() + 1);
                 FontMetrics fm = g2d.getFontMetrics();
                 g2d.drawString(txt, pt.x - fm.stringWidth(txt)/2,
                         pt.y + fm.getAscent()/2 - fm.getDescent()/2);
@@ -295,6 +292,9 @@ public class BoardPanel extends JPanel {
         g2d.drawString(txt, x, y);
         g2d.setFont(orig);
     }
+
+
+
 
     private void autoDrawLine(Graphics2D g2d, int p1Index, int p2Index) {
         Board.BoardPoint p1 = board.getBoardPoint(p1Index);
