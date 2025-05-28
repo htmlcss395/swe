@@ -4,7 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Board {
-    public ArrayList<int[]> pentagonEdges;  // <= 이거 선언!
+    public ArrayList<int[]> pentagonEdges;
+
+    private int[]   mainRoute;
+    private int[][] branchTable;
+    private java.util.Set<Integer> noCatchSet;
 
     public static class BoardPoint {
         public int x;
@@ -95,7 +99,20 @@ public class Board {
 
                 // Point 31: Finish point
                 boardPoints[31] = new BoardPoint((int) (m + os + ps_outer), (int) (m + os));
+
+
+                mainRoute  = new int[]{ 0,1,2,3,4,5,6,7,8,9,10,
+                        11,12,13,14,15,16,17,18,19,20,
+                        31 };
+                branchTable = new int[][]{
+                        {5,21},{21,22},{22,23},
+                        {10,26},{26,27},{27,23},
+                        {23,24},{24,25},{25,15},
+                        {23,28},{28,29},{29,30},{30,31}
+                };
+                noCatchSet  = java.util.Set.of(0,31);
                 break;
+
             }
 
 
@@ -156,7 +173,26 @@ public class Board {
                     edges.add(new int[]{idx2 , 35});
                 }
                 this.pentagonEdges = edges;
+
+                mainRoute = new int[]{
+                        // 외곽 25칸
+                        0,1,2,3,4,5,6,7,8,9,
+                        10,11,12,13,14,15,16,17,18,19,
+                        20,21,22,23,24,
+                        // 지름길 24->29->20(P)-> finish(10) 예시
+                        29,20,        // P
+                        35,           // 센터
+                        30,25,15,     // 다른 분기 (=원래 길)
+                        35            // finish 를 35 로 가정
+                };
+                branchTable = new int[][]{
+                        {0,5}, {5,10}, {10,15}, {15,20},
+                        {20,25}, {25,30},{30,35},   // C
+                        {24,29},{29,20}
+                };
+                noCatchSet  = java.util.Set.of(0/*start*/);
                 break;
+
             }
 
 
@@ -228,6 +264,21 @@ public class Board {
 
 
                 this.pentagonEdges = edges;   // 같은 필드 재활용
+
+                mainRoute = new int[]{
+                        5,6,7,8,9,10,11,12,13,14,15,
+                        16,17,18,19,20,21,22,23,24,25,
+                        26,27,28,29,0,1,2,3,4,
+                        35,40,25,30,42
+                };
+                branchTable = new int[][]{
+                        {5,30},{30,36},{36,42},
+                        {10,31},{31,37},{37,42},
+                        {15,32},{32,38},{38,42},
+                        {20,33},{33,39},{39,42},
+                        {25,34},{34,40},{40,42}
+                };
+                noCatchSet = java.util.Set.of(5);   // hexagon start
                 break;
             }
 
@@ -247,109 +298,167 @@ public class Board {
     }
 
 
-    private int getPreviousPosition(int currentPos) {
-        if (currentPos == 0)
-            return 20;
-        if (currentPos == 21)
-            return 5;
-        if (currentPos == 26)
-            return 10;
-        if (currentPos == 28)
-            return 23;
-        if (currentPos == 31)
-            return 30; // not gonna be used anyway
+//    private int getPreviousPosition(int currentPos) {
+//        if (currentPos == 0)
+//            return 20;
+//        if (currentPos == 21)
+//            return 5;
+//        if (currentPos == 26)
+//            return 10;
+//        if (currentPos == 28)
+//            return 23;
+//        if (currentPos == 31)
+//            return 30; // not gonna be used anyway
+//
+//        /*
+//         * TBA: More detailed rules needed
+//         */
+//        if (currentPos == 15)
+//            return 14;
+//        if (currentPos == 23)
+//            return 22;
+//
+//        else
+//            return currentPos - 1;
+//    } // 기존의 하드코드된 부분을 제거
+private int getPreviousPosition(int currentPos) {
+    return prevPos(currentPos);
+}
 
-        /*
-         * TBA: More detailed rules needed
-         */
-        if (currentPos == 15)
-            return 14;
-        if (currentPos == 23)
-            return 22;
 
-        else
-            return currentPos - 1;
-    }
 
+
+//    public int calculateTargetPosition(Piece piece, int steps) {
+//        int originalPos = piece.getCurrentPositionIndex();
+//        int currentSimulationPos = originalPos;
+//
+//        if (piece.isFinished()) {
+//            return 31;
+//        }
+//        if (steps == -1) {
+//            if (originalPos == 0) {
+//                return 20;
+//            }
+//            return getPreviousPosition(originalPos);
+//        }
+//
+//        for (int i = 0; i < steps; i++) {
+//            if (currentSimulationPos == 31) {
+//                break;
+//            }
+//            int nextPosAfterOneStep = -1;
+//
+//            if (currentSimulationPos == 23) { // Center
+//                if (originalPos == 5 || originalPos == 21 || originalPos == 22) {
+//                    nextPosAfterOneStep = 24; // Path 3 (23->24->25->15)
+//                } else { // Came from 10 originally OR started at 23
+//                    nextPosAfterOneStep = 28; // Path 4 (23->28->29->30->31)
+//                }
+//            } else if (currentSimulationPos == 0)
+//                nextPosAfterOneStep = 1;
+//            else if (currentSimulationPos == 20)
+//                nextPosAfterOneStep = 31; // End of outer -> Finish
+//            else if (currentSimulationPos == 30)
+//                nextPosAfterOneStep = 31; // Point before Finish -> Finish
+//
+//            else if (currentSimulationPos == 22)
+//                nextPosAfterOneStep = 23; // Path 1 (5->21->22->23) end
+//            else if (currentSimulationPos == 27)
+//                nextPosAfterOneStep = 23; // Path 2 (10->26->27->23) end
+//
+//            else if (currentSimulationPos == 25)
+//                nextPosAfterOneStep = 15; // Path 3 (23->24->25->15) end
+//            else if (currentSimulationPos == 29)
+//                nextPosAfterOneStep = 30; // Path 4 (23->28->29->30) end
+//
+//            else if (i == 0 && originalPos == 5) {
+//                nextPosAfterOneStep = 21;
+//            } // Start of Path 1
+//            else if (i == 0 && originalPos == 10) {
+//                nextPosAfterOneStep = 26;
+//            } // Start of Path 2
+//            else {
+//                nextPosAfterOneStep = currentSimulationPos + 1; // Linear move
+//            }
+//            currentSimulationPos = nextPosAfterOneStep;
+//        }
+//        if (currentSimulationPos > 31) {
+//            currentSimulationPos = 31;
+//        }
+//        return currentSimulationPos;
+//    }
+    
+    // 새로운 공통 전진 로직, mainToute / branchTable 사용
     public int calculateTargetPosition(Piece piece, int steps) {
-        int originalPos = piece.getCurrentPositionIndex();
-        int currentSimulationPos = originalPos;
+        int pos = piece.getCurrentPositionIndex();
+        int finish = mainRoute[mainRoute.length - 1];
+        if (piece.isFinished()) return finish;
 
-        if (piece.isFinished()) {
-            return 31;
-        }
-        if (steps == -1) {
-            if (originalPos == 0) {
-                return 20;
-            }
-            return getPreviousPosition(originalPos);
-        }
+        /* Back-Do */
+        if (steps == -1) return prevPos(pos);
 
         for (int i = 0; i < steps; i++) {
-            if (currentSimulationPos == 31) {
-                break;
-            }
-            int nextPosAfterOneStep = -1;
-
-            if (currentSimulationPos == 23) { // Center
-                if (originalPos == 5 || originalPos == 21 || originalPos == 22) {
-                    nextPosAfterOneStep = 24; // Path 3 (23->24->25->15)
-                } else { // Came from 10 originally OR started at 23
-                    nextPosAfterOneStep = 28; // Path 4 (23->28->29->30->31)
-                }
-            } else if (currentSimulationPos == 0)
-                nextPosAfterOneStep = 1;
-            else if (currentSimulationPos == 20)
-                nextPosAfterOneStep = 31; // End of outer -> Finish
-            else if (currentSimulationPos == 30)
-                nextPosAfterOneStep = 31; // Point before Finish -> Finish
-
-            else if (currentSimulationPos == 22)
-                nextPosAfterOneStep = 23; // Path 1 (5->21->22->23) end
-            else if (currentSimulationPos == 27)
-                nextPosAfterOneStep = 23; // Path 2 (10->26->27->23) end
-
-            else if (currentSimulationPos == 25)
-                nextPosAfterOneStep = 15; // Path 3 (23->24->25->15) end
-            else if (currentSimulationPos == 29)
-                nextPosAfterOneStep = 30; // Path 4 (23->28->29->30) end
-
-            else if (i == 0 && originalPos == 5) {
-                nextPosAfterOneStep = 21;
-            } // Start of Path 1
-            else if (i == 0 && originalPos == 10) {
-                nextPosAfterOneStep = 26;
-            } // Start of Path 2
-            else {
-                nextPosAfterOneStep = currentSimulationPos + 1; // Linear move
-            }
-            currentSimulationPos = nextPosAfterOneStep;
+            int nxt = nextPos(pos);
+            if (nxt == pos) break;      // 더 못 가면 중단
+            pos = nxt;
         }
-        if (currentSimulationPos > 31) {
-            currentSimulationPos = 31;
-        }
-        return currentSimulationPos;
+        return pos;
+
     }
 
-    public List<Piece> findOpponentPiecesAt(int targetPosition, Team currentPlayerTeam, List<Team> allTeams) {
-        List<Piece> opponentLeadersOrIndividualsAtPos = new ArrayList<>();
-        if (targetPosition == 0 || targetPosition == 31) {
-            return opponentLeadersOrIndividualsAtPos;
-        }
-        for (Team team : allTeams) {
-            if (team.getId() != currentPlayerTeam.getId()) {
-                opponentLeadersOrIndividualsAtPos.addAll(team.getInteractivePiecesAt(targetPosition));
+//    public List<Piece> findOpponentPiecesAt(int targetPosition, Team currentPlayerTeam, List<Team> allTeams) {
+//        List<Piece> opponentLeadersOrIndividualsAtPos = new ArrayList<>();
+//        if (targetPosition == 0 || targetPosition == 31) { // No catches at start/finish
+//            return opponentLeadersOrIndividualsAtPos;
+//        }
+//        for (Team team : allTeams) {
+//            if (team.getId() != currentPlayerTeam.getId()) {
+//                // Use getInteractivePiecesAt to get only leaders or individual pieces of the
+//                // opponent team
+//                opponentLeadersOrIndividualsAtPos.addAll(team.getInteractivePiecesAt(targetPosition));            }
+//        }
+//        return opponentLeadersOrIndividualsAtPos;
+//    }
+
+        /* --------------------------------------------
+      ★ 잡기 로직: noCatchSet 으로 간단 필터
+       -------------------------------------------- */
+        public List<Piece> findOpponentPiecesAt(int targetPosition, Team me, List<Team> allTeams) {
+                List<Piece> caught = new ArrayList<>();
+                if (noCatchSet.contains(targetPosition)) return caught;
+                       for (Team t : allTeams) {
+                        if (t.getId() == me.getId()) continue;
+                        caught.addAll(t.getInteractivePiecesAt(targetPosition));
+                    }
+                return caught;
             }
-        }
-        return opponentLeadersOrIndividualsAtPos;
-    }
 
 
     public void resetPiecesToStart(List<Piece> piecesToReset) {
+        // The Piece.reset() method now handles detaching from groups and resetting
+        // stacked pieces if it's a leader.
         for (Piece piece : piecesToReset) {
             piece.reset();
         }
     }
+
+    private int nextPos(int from){
+        for (int[] b: branchTable)
+            if (b[0]==from) return b[1];
+        // mainRoute 에서 다음
+        for (int i=0;i<mainRoute.length-1;i++)
+            if (mainRoute[i]==from) return mainRoute[i+1];
+        return from;          // 끝 = 더 못감
+    }
+    // 한 스텝 후진
+    private int prevPos(int from){
+        for (int[] b: branchTable)
+            if (b[1]==from) return b[0];
+        for (int i=1;i<mainRoute.length;i++)
+            if (mainRoute[i]==from) return mainRoute[i-1];
+        return from;
+    }
+
 
     public BoardType getBoardType() {
         return this.boardType;
@@ -365,6 +474,8 @@ public class Board {
     }
 
     public boolean isValidMoveStart(Piece piece, int steps) {
+        // piece.canMove() now correctly checks if the piece is stacked (and thus
+        // unmovable independently)
         return piece.canMove(steps);
     }
 }

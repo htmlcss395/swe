@@ -48,10 +48,10 @@ public class BoardPanel extends JPanel {
         int clickX = e.getX();
         int clickY = e.getY();
 
-        for (int i = 0; i <= 31; i++) {
+        for (int i = 0; i <= 31; i++) { // Iterate through all board points
             Board.BoardPoint pointCoords = board.getBoardPoint(i);
             if (pointCoords != null) {
-                int pointClickArea = pointSize * 3;
+                int pointClickArea = pointSize * 3; // Increased click area for easier selection
                 int pointDrawX = pointCoords.x - pointClickArea / 2;
                 int pointDrawY = pointCoords.y - pointClickArea / 2;
                 int buffer = 10;
@@ -61,20 +61,43 @@ public class BoardPanel extends JPanel {
 
                     List<Piece> piecesAtThisPoint = new ArrayList<>();
                     for (Team team : teams) {
+                        // Get leaders or individuals at this visual point
                         piecesAtThisPoint.addAll(team.getInteractivePiecesAt(i));
-
                     }
 
                     if (!piecesAtThisPoint.isEmpty()) {
                         guiController.pieceStackClicked(piecesAtThisPoint, clickX, clickY);
                         return;
                     } else {
+                        // Clicked on an empty board point, let guiController handle if needed
+                        // (though current boardClicked is more for deselection)
+                        // If we stop iterating here, clicks on empty points with no pieces nearby won't
+                        // deselect.
+                        // So, we might want to continue checking or call boardClicked only if no piece
+                        // stack is found after checking all points.
+                        // For now, if a point is clicked, and it has pieces, we handle it. If not, the
+                        // click falls through.
+                        // This means guiController.boardClicked might be called if the loop finishes
+                        // without finding pieces.
+                        // Let's break if a point is identified, piece or not, to avoid multiple point
+                        // processing.
+                        // The original logic was to break; if pieces were found.
+                        // If no pieces, it would fall through to boardClicked.
+                        // This seems fine. If point is empty, this loop doesn't find pieces, falls to
+                        // boardClicked.
+
                         break;
+                        // Found the clicked point, whether it has pieces or not.
+                        // If it had pieces, it's handled. If not, loop continues or exits.
+                        // This break ensures we only process one "board point" per click.
+
                     }
                 }
             }
         }
-        guiController.boardClicked(clickX, clickY);
+        // If loop completes without returning (i.e. no interactive piece found at any
+        // specific point that matched click area)
+        guiController.boardClicked(clickX, clickY); // General board click (e.g., for deselection)
     }
 
     @Override
@@ -230,6 +253,18 @@ public class BoardPanel extends JPanel {
                 else if (i == 35) drawText(g2d, "C", point, currentSize, 1);
                 if (i == 0 || i == 5 || i == 10 || i == 15 || i == 20 || i == 35)
                     currentSize = pointSize * 2;
+//                if      (i == 0)  drawText(g2d, "시작",   point, currentSize,  1);
+//                else if (i == 10) drawText(g2d, "참먹이1", point, currentSize, -1);
+//                else if (i == 20) drawText(g2d, "참먹이2", point, currentSize,  1);
+//                else if (i == 35) drawText(g2d, "C",      point, currentSize,  1);
+//                /* ---------- 강조 크기/색 ---------- */
+//                if (i == 10 || i == 20) {                       // 두 ‘참먹이’ 지점
+//                    dotColor    = Color.MAGENTA;
+//                    currentSize = pointSize * 2;
+//                }
+//                if (i == 0 || i == 5 || i == 10 || i == 15 || i == 20 || i == 35)
+//                    currentSize = pointSize * 2;
+
             } else if (board.getBoardType() == BoardType.HEXAGON) {
                 if (i == 0) drawText(g2d, "시작", point, currentSize,  1);
                 else if (i == 10) drawText(g2d, "P",    point, currentSize,-1);
@@ -258,17 +293,24 @@ public class BoardPanel extends JPanel {
                 case 0 -> Color.RED;  case 1 -> Color.BLUE;
                 case 2 -> Color.GREEN;default -> Color.ORANGE;
             };
+            // Iterate over *all* pieces to find leaders or unstacked pieces to draw
             for (Piece p : team.getPieces()) {
+                // Don't draw finished pieces on the board path
+                // Don't draw pieces that are stacked (they are represented by their leader)
                 if (p.isFinished() || p.isStacked()) continue;
+
+                // Now 'piece' is either a leader or an un-stacked individual piece
                 Board.BoardPoint pt = board.getBoardPoint(p.getCurrentPositionIndex());
                 if (pt == null) continue;
 
                 g2d.setColor(teamColor);
+
+                // Highlight if this piece/group is the one selected by the player for a move
                 if (p == selectedPiece) {
                     g2d.setColor(Color.CYAN);
                     int hs = pieceSize + 10;
                     g2d.fillOval(pt.x - hs/2, pt.y - hs/2, hs, hs);
-                    g2d.setColor(teamColor);
+                    g2d.setColor(teamColor); // Reset to original team color for the piece itself
                 }
                 g2d.fillOval(pt.x - pieceSize/2, pt.y - pieceSize/2,
                         pieceSize, pieceSize);
