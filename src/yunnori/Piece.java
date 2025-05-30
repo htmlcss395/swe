@@ -6,11 +6,15 @@ import java.util.List;
 public class Piece {
     private int id;
     private int teamId;
-    private int currentPositionIndex; // 0-31 mapping the board, + 31 for Finish
+    public int currentPositionIndex; // 0-31 mapping the board, + 31 for Finish
     private boolean isFinished;
     // --- New fields for grouping ---
     private List<Piece> stackedPieces; // Pieces this piece is carrying (if it's a leader)
     private Piece groupLeader; // The leader of the group this piece belongs to (if not the leader itself)
+
+    private Integer centerExitNext = null;   // 35에 서서 ‘다음에 34/33 …’ 으로 나갈 곳
+    public Integer getCenterExitNext()        { return centerExitNext; }
+    public void    setCenterExitNext(Integer i){ centerExitNext = i;   }
 
     public Piece(int id, int teamId) {
         this.id = id;
@@ -125,6 +129,16 @@ public class Piece {
             }
         }
     }
+
+    public void setCurrentPositionIndex(int idx) {
+        this.currentPositionIndex = idx;
+        if (isGroupLeader()) {
+            for (Piece stacked : this.stackedPieces) {
+                stacked.currentPositionIndex = idx;
+            }
+        }
+    }
+
 
     public void reset() {
         leaveGroup(); // If stacked, leave its current group.

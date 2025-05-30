@@ -405,6 +405,11 @@ private int getPreviousPosition(int currentPos) {
     
     // 새로운 공통 전진 로직, mainToute / branchTable 사용
     public int calculateTargetPosition(Piece piece, int steps) {
+
+
+
+
+
         int pos = piece.getCurrentPositionIndex();
         if (piece.isFinished()) {
             int finish = mainRoute[mainRoute.length - 1];
@@ -423,10 +428,26 @@ private int getPreviousPosition(int currentPos) {
             }
 
             case PENTAGON:
+                // 0) 센터 탈출 예약이 있으면 최우선
+                if (piece.getCenterExitNext() != null) {
+                    int tmp = piece.getCenterExitNext();
+                    piece.setCenterExitNext(null); // 예약 소모
+                    if (steps == 0) return tmp;
+                    piece.setCurrentPositionIndex(tmp); // 위치 갱신
+                    return calculateTargetPosition(piece, steps); // 재귀적으로 steps 처리
+                }
+
+                // 1) 한 칸씩 전진
                 for (int i = 0; i < steps; i++) {
-                    int nxt = nextPos(pos, i == 0);
-                    if (nxt == pos) break;
+                    int prev = pos;
+                    int nxt = nextPos(prev, i == 0);
                     pos = nxt;
+
+                    // 2) 센터(35)에 정확히 멈췄으면 탈출 예약!
+                    if (pos == 35 && i == steps - 1) {
+                        int exitIdx2 = ((prev - 30 + 3) % 5) + 30; // (표 참고)
+                        piece.setCenterExitNext(exitIdx2);
+                    }
                 }
                 return pos;
 
