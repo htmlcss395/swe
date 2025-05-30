@@ -48,7 +48,7 @@ public class BoardPanel extends JPanel {
         int clickX = e.getX();
         int clickY = e.getY();
 
-        for (int i = 0; i <= 31; i++) { // Iterate through all board points
+        for (int i = 0; i < board.getPointCount(); i++) {// Iterate through all board points
             Board.BoardPoint pointCoords = board.getBoardPoint(i);
             if (pointCoords != null) {
                 int pointClickArea = pointSize * 3; // Increased click area for easier selection
@@ -86,7 +86,9 @@ public class BoardPanel extends JPanel {
                         // This seems fine. If point is empty, this loop doesn't find pieces, falls to
                         // boardClicked.
 
-                        break;
+
+                        continue;
+                        //   break;
                         // Found the clicked point, whether it has pieces or not.
                         // If it had pieces, it's handled. If not, loop continues or exits.
                         // This break ensures we only process one "board point" per click.
@@ -129,7 +131,7 @@ public class BoardPanel extends JPanel {
             autoDrawLine(g2d, 29, 30);
             autoDrawLine(g2d, 30, 0); // 30 to Finish (31)
 
-            for (int i = 0; i <= 31; i++) {
+            for (int i = 0; i < board.getPointCount(); i++) {
                 Board.BoardPoint point = board.getBoardPoint(i);
                 if (point != null) {
                     if (validMoveTargets != null && validMoveTargets.contains(i)) {
@@ -250,6 +252,7 @@ public class BoardPanel extends JPanel {
             } else if (board.getBoardType() == BoardType.PENTAGON) {
                 if (i == 0)  drawText(g2d, "시작", point, currentSize,  1);
                 else if (i == 10) drawText(g2d, "P", point, currentSize,-1);
+                else if (i == 25) drawText(g2d, "25 ", point, currentSize,-1);
                 else if (i == 35) drawText(g2d, "C", point, currentSize, 1);
                 if (i == 0 || i == 5 || i == 10 || i == 15 || i == 20 || i == 35)
                     currentSize = pointSize * 2;
