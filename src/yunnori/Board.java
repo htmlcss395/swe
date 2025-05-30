@@ -185,24 +185,24 @@ public class Board {
                         30,25,15,     // 다른 분기 (=원래 길)
                         35            // finish 를 35 로 가정
                 };
-                /* ---------- PENTAGON branchTable (fixed) ---------- */
                 branchTable = new int[][]{
+                        // 외곽 순환
+                        {0,1},{1,2},{2,3},{3,4},{4,5},
+                        {5,6},{6,7},{7,8},{8,9},{9,10},
+                        {10,11},{11,12},{12,13},{13,14},{14,15},
+                        {15,16},{16,17},{17,18},{18,19},{19,20},
+                        {20,21},{21,22},{22,23},{23,24},{24,0},
 
-                        /* 1) 대각선 지름길  (5 ▶ 35(C) ▶ 29 ▶ 0) */
-                        {5,35}, {35,29}, {29,0},
-
-                        /* 2) 외곽 진행 시계방향 (0 ▶ 5 ▶ … ▶ 20 ▶ 0) */
-                        {0,5}, {5,10}, {10,15}, {15,20}, {20,0},
-
-                        /* 3) 각 꼭짓점 ↔ 센터(C) 방사선 */
-                        {0,25}, {25,30}, {30,35},
-                        {5,26}, {26,31}, {31,35},
-                        {10,27}, {27,32}, {32,35},
-                        {15,28}, {28,33}, {33,35},
-                        {20,24}, {24,34}, {34,35},
-
-                        /* 4) P(24) → 29 분기  */
-                        {24,29}
+                        // 0번 꼭짓점에서 센터로
+                        {0,25},{25,30},{30,35},
+                        // 5번 꼭짓점에서 센터로
+                        {5,26},{26,31},{31,35},
+                        // 10번 꼭짓점에서 센터로
+                        {10,27},{27,32},{32,35},
+                        // 15번 꼭짓점에서 센터로
+                        {15,28},{28,33},{33,35},
+                        // 20번 꼭짓점에서 센터로
+                        {20,29},{29,34},{34,35}
                 };
 
                 noCatchSet  = java.util.Set.of(0/*start*/);
@@ -406,20 +406,58 @@ private int getPreviousPosition(int currentPos) {
     // 새로운 공통 전진 로직, mainToute / branchTable 사용
     public int calculateTargetPosition(Piece piece, int steps) {
         int pos = piece.getCurrentPositionIndex();
-        int finish = mainRoute[mainRoute.length - 1];
-        if (piece.isFinished()) return finish;
-
-        /* Back-Do */
+        if (piece.isFinished()) {
+            int finish = mainRoute[mainRoute.length - 1];
+            return finish;
+        }
         if (steps == -1) return prevPos(pos);
 
-        for (int i = 0; i < steps; i++) {
-            int nxt = nextPos(pos);
-            if (nxt == pos) break;      // 더 못 가면 중단
-            pos = nxt;
-        }
-        return pos;
+        switch (boardType) {
+            case RECTANGLE: {
+                for (int i = 0; i < steps; i++) {
+                    int nxt = nextPos(pos);
+                    if (nxt == pos) break;
+                    pos = nxt;
+                }
+                return pos;
+            }
 
+            case PENTAGON: {
+                for (int i = 0; i < steps; i++) {
+                    int nxt = nextPos(pos);   // 외곽/내부 전진
+                    if (nxt == pos) break;
+                    pos = nxt;
+                }
+                // 이동이 끝난 후, 꼭짓점(5,10,15,20)에 "멈췄을 때"만 내부로 진입
+                if (pos % 5 == 0 && pos > 0 && pos <= 20) {
+                    for (int[] e : branchTable)
+                        if (e[0] == pos && e[1] >= 25 && e[1] <= 34) {
+                            pos = e[1];
+                            break;
+                        }
+                }
+                return pos;
+            }
+
+
+
+            case HEXAGON: {
+                for (int i = 0; i < steps; i++) {
+                    int nxt = nextPos(pos);
+                    if (nxt == pos) break;
+                    pos = nxt;
+                }
+                return pos;
+            }
+
+            default:
+                // 혹시 모를 예외
+                return pos;
+        }
     }
+
+
+
 
 //    public List<Piece> findOpponentPiecesAt(int targetPosition, Team currentPlayerTeam, List<Team> allTeams) {
 //        List<Piece> opponentLeadersOrIndividualsAtPos = new ArrayList<>();
@@ -435,9 +473,6 @@ private int getPreviousPosition(int currentPos) {
 //        return opponentLeadersOrIndividualsAtPos;
 //    }
 
-        /* --------------------------------------------
-      ★ 잡기 로직: noCatchSet 으로 간단 필터
-       -------------------------------------------- */
         public List<Piece> findOpponentPiecesAt(int targetPosition, Team me, List<Team> allTeams) {
                 List<Piece> caught = new ArrayList<>();
                 if (noCatchSet.contains(targetPosition)) return caught;
@@ -457,14 +492,53 @@ private int getPreviousPosition(int currentPos) {
         }
     }
 
-    private int nextPos(int from){
-        for (int[] b: branchTable)
-            if (b[0]==from) return b[1];
-        // mainRoute 에서 다음
-        for (int i=0;i<mainRoute.length-1;i++)
-            if (mainRoute[i]==from) return mainRoute[i+1];
-        return from;          // 끝 = 더 못감
+//    private int nextPos(int from){
+//        for (int[] b: branchTable)
+//            if (b[0]==from) return b[1];
+//        // mainRoute 에서 다음
+//        for (int i=0;i<mainRoute.length-1;i++)
+//            if (mainRoute[i]==from) return mainRoute[i+1];
+//        return from;          // 끝 = 더 못감
+//    }
+
+    private int nextPos(int from) {
+        switch (boardType) {
+            case RECTANGLE:
+                for (int[] b : branchTable)
+                    if (b[0] == from) return b[1];
+                for (int i = 0; i < mainRoute.length - 1; i++)
+                    if (mainRoute[i] == from) return mainRoute[i + 1];
+                return from;
+
+            case PENTAGON:
+                if (from == 0) {
+                    for (int[] b : branchTable)
+                        if (b[0] == from && b[1] == 1) return b[1];
+                    return from;
+                }
+                for (int[] b : branchTable)
+                    if (b[0] == from && b[1] < 25) return b[1];
+                if (from >= 25 && from <= 34) return 35;
+                return from;
+
+
+            case HEXAGON:
+                for (int[] b : branchTable)
+                    if (b[0] == from) return b[1];
+                for (int i = 0; i < mainRoute.length - 1; i++)
+                    if (mainRoute[i] == from) return mainRoute[i + 1];
+                return from;
+
+            default:
+                // 혹시나 모를 예외
+                return from;
+        }
     }
+
+
+
+
+
     // 한 스텝 후진
     private int prevPos(int from){
         for (int[] b: branchTable)
