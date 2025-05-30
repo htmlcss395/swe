@@ -415,35 +415,28 @@ private int getPreviousPosition(int currentPos) {
         switch (boardType) {
             case RECTANGLE: {
                 for (int i = 0; i < steps; i++) {
-                    int nxt = nextPos(pos);
+                    int nxt = nextPos(pos, i == 0);
                     if (nxt == pos) break;
                     pos = nxt;
                 }
                 return pos;
             }
 
-            case PENTAGON: {
+            case PENTAGON:
                 for (int i = 0; i < steps; i++) {
-                    int nxt = nextPos(pos);   // 외곽/내부 전진
+                    int nxt = nextPos(pos, i == 0);
                     if (nxt == pos) break;
                     pos = nxt;
                 }
-                // 이동이 끝난 후, 꼭짓점(5,10,15,20)에 "멈췄을 때"만 내부로 진입
-                if (pos % 5 == 0 && pos > 0 && pos <= 20) {
-                    for (int[] e : branchTable)
-                        if (e[0] == pos && e[1] >= 25 && e[1] <= 34) {
-                            pos = e[1];
-                            break;
-                        }
-                }
                 return pos;
-            }
+
+
 
 
 
             case HEXAGON: {
                 for (int i = 0; i < steps; i++) {
-                    int nxt = nextPos(pos);
+                    int nxt = nextPos(pos, i == 0);
                     if (nxt == pos) break;
                     pos = nxt;
                 }
@@ -501,7 +494,7 @@ private int getPreviousPosition(int currentPos) {
 //        return from;          // 끝 = 더 못감
 //    }
 
-    private int nextPos(int from) {
+    private int nextPos(int from, boolean firstStep) {
         switch (boardType) {
             case RECTANGLE:
                 for (int[] b : branchTable)
@@ -511,15 +504,23 @@ private int getPreviousPosition(int currentPos) {
                 return from;
 
             case PENTAGON:
-                if (from == 0) {
-                    for (int[] b : branchTable)
-                        if (b[0] == from && b[1] == 1) return b[1];
-                    return from;
+                /* 1) 첫 스텝이면서 꼭짓점(5·10·15·20)이면 → 안쪽 분기(25‥34) */
+                if (firstStep && from % 5 == 0 && from > 0 && from <= 20) {
+                    for (int[] e : branchTable)
+                        if (e[0] == from && e[1] >= 25 && e[1] <= 34)
+                            return e[1];            // 5→26, 10→27, 15→28, 20→29
                 }
-                for (int[] b : branchTable)
-                    if (b[0] == from && b[1] < 25) return b[1];
+
+                /* 2) 바깥 둘레(0‥24) 그대로 진행 */
+                for (int[] e : branchTable)
+                    if (e[0] == from && e[1] < 25)
+                        return e[1];
+
+                /* 3) 안쪽 분기(25‥34)는 센터(35)로 */
                 if (from >= 25 && from <= 34) return 35;
-                return from;
+
+                return from;                        // 더 못 가면 제자리
+
 
 
             case HEXAGON:
