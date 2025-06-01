@@ -432,23 +432,52 @@ private int getPreviousPosition(int currentPos) {
                 if (piece.getCenterExitNext() != null) {
                     int tmp = piece.getCenterExitNext();
                     piece.setCenterExitNext(null); // 예약 소모
-                    if (steps == 0) return tmp;
-                    piece.setCurrentPositionIndex(tmp); // 위치 갱신
-                    return calculateTargetPosition(piece, steps); // 재귀적으로 steps 처리
+
+                    if (steps == 0) {
+                        return tmp;
+                    }
+                    piece.setCurrentPositionIndex(tmp);
+                    return calculateTargetPosition(piece, steps - 1);
                 }
 
-                // 1) 한 칸씩 전진
+                // ─────────────────────────────────────────────────────
+                // 1) 한 칸씩 이동하면서, “센터에 도달(=35)했는지”를 체크
                 for (int i = 0; i < steps; i++) {
                     int prev = pos;
-                    int nxt = nextPos(prev, i == 0);
-                    pos = nxt;
+                    int nxt  = nextPos(prev, i == 0);
 
-                    // 2) 센터(35)에 정확히 멈췄으면 탈출 예약!
-                    if (pos == 35 && i == steps - 1) {
-                        int exitIdx2 = ((prev - 30 + 3) % 5) + 30; // (표 참고)
-                        piece.setCenterExitNext(exitIdx2);
+                    // 1-1) 다음 위치가 센터(35)라면
+                    if (nxt == 35) {
+                        // (1-1-가) “마지막 스텝에 멈추는 경우”
+                        if (i == steps - 1) {
+                            // 멈춘 prev(30~34 중 하나)에 따라, 다음 턴 탈출 인덱스를 예약
+                            //예: prev=31 → ((31-30+3)%5)+30 = 34
+                            int exitIdx2 = ((prev - 30 + 3) % 5) + 30;
+                            piece.setCenterExitNext(exitIdx2);
+
+                            // 실제 턴 종료 시점에는 pos=35인 채로 멈춤
+                            pos = 35;
+                            break;
+                        }
+                        //(1-1-나) “중간에 센터를 지나치는 경우”
+                        else {
+                            // ↳ prev가 32라면 ((32-30+1)%5)+30 = 33 (→ 33→28→15… 경로)
+                            // ↳ prev가 33라면 ((33-30+1)%5)+30 = 34
+                            int passExit = ((prev - 30 + 1) % 5) + 30;
+                            pos = passExit;
+                            // 남은 스텝이 더 있으므로, i++ 대신 continue로 loop 유지
+                            continue;
+                        }
                     }
+
+                    // 1-2) 센터가 아닌 일반 이동(외곽 또는 내부 경로)
+                    if (nxt == prev) {
+                        // 더 이상 이동 불가능하면 중단
+                        break;
+                    }
+                    pos = nxt;
                 }
+
                 return pos;
 
 
