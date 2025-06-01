@@ -225,6 +225,24 @@ public class Board {
 
 
             case HEXAGON: {
+
+//                mainRoute = new int[]{
+//                        1, 2, 3, 4,
+//                        5, 6, 7, 8, 9,
+//                        10, 11, 12, 13, 14,
+//                        15, 16, 17, 18, 19,
+//                        20,21,22,23,24,
+//                        25,26,27,28,29,
+//                        42
+//                };
+//
+//                branchTable = new int[][]{
+//                     { 5, 30 }, { 30, 36 }, { 36, 42 },
+//                        {10, 31 }, { 31, 37 }, { 37, 42 },
+//                       {15, 32 }, { 32, 38 }, { 38, 42 },
+//                        {20, 33 }, { 33, 39 }, { 39, 42 },
+//                        {25, 34 }, { 34, 40 }, { 40, 42 }
+//                };
                 double m = 50, os = 900;
                 int cx = (int)(m + os/2),  cy = (int)(m + os/2);
                 int r  = (int)(os * 0.42);          // 외곽 반지름 (6각형이라 약간 키움)
@@ -498,33 +516,44 @@ private int getPreviousPosition(int currentPos) {
 
 
             case HEXAGON: {
+                // 1. 하드 무브(특수 분기) 체크
                 int jump = hardMove(pos, piece.getPrevPositionIndex(), steps);
                 if (jump != -1) {
-                    piece.setCurrentPositionIndex(jump);
+                    piece.setCurrentPositionIndex(jump); // 이동 시 prevPositions 자동 갱신
                     return jump;
                 }
 
-                for (int i=0;i<steps;i++){
+                // 2. 일반 이동
+                for (int i = 0; i < steps; i++) {
                     int prev = pos;
-                    int nxt  = nextPos(prev, i==0);
+                    int nxt = nextPos(prev, i == 0);
 
-                    if (nxt == 42){
-                        if (i == steps-1){
-                            int exit = (prev>=30&&prev<=35)? prev+6 : prev-6;
+                    // 센터 진입/이탈 처리
+                    if (nxt == 42) {
+                        if (i == steps - 1) {
+                            int exit = (prev >= 30 && prev <= 35) ? prev + 6 : prev - 6;
                             piece.setCenterExitNext(exit);
-                            pos = 42; break;
+                            // prevPositions도 정확히 갱신 (센터 도달 기록)
+                            piece.setCurrentPositionIndex(42);
+                            return 42;
                         } else {
-                            pos = (prev>=30&&prev<=35)? prev+6 : prev-6;
+                            pos = (prev >= 30 && prev <= 35) ? prev + 6 : prev - 6;
+                            piece.setCurrentPositionIndex(pos); // 한 칸 이동 때마다 이력 업데이트
                             continue;
                         }
                     }
 
+                    // 더 이상 못 가면 중단
                     if (nxt == prev) break;
+
+                    // 이동 및 이력 업데이트
                     pos = nxt;
+                    piece.setCurrentPositionIndex(pos);
                 }
-                piece.setCurrentPositionIndex(pos);
+
                 return pos;
             }
+
 
 
 //            case HEXAGON: {
@@ -749,7 +778,7 @@ private int getPreviousPosition(int currentPos) {
                     default -> -1;
                 };
             case 42:
-                if (prev == 5) {
+                if (prev == 5 || prev == 31 || prev == 37) {
                     return switch (steps) {
                         case 1 -> 41;
                         case 2 -> 35;
@@ -758,25 +787,56 @@ private int getPreviousPosition(int currentPos) {
                         case 5 -> 28;
                         default -> -1;
                     };
-                } else if (prev == 31) {
+                } else if (prev == 10 || prev == 32 || prev == 38) {
                     return switch (steps) {
-                        case 1 -> 35;
-                        case 2 -> 35;
-                        case 3 -> 26;
-                        case 4 -> 27;
-                        case 5 -> 20;
+                        case 1 -> 36;
+                        case 2 -> 30;
+                        case 3 -> 0;
+                        case 4 -> 1;
+                        case 5 -> 2;
                         default -> -1;
                     };
-                } else if (prev == 37) {
+                } else if (prev == 15 || prev == 33 || prev == 39) {
                     return switch (steps) {
-                        case 1 -> 35;
-                        case 2 -> 35;
-                        case 3 -> 26;
-                        case 4 -> 27;
-                        case 5 -> 21;
+                        case 1 -> 37;
+                        case 2 -> 31;
+                        case 3 -> 5;
+                        case 4 -> 6;
+                        case 5 -> 7;
                         default -> -1;
                     };
+                } else if (prev == 20 || prev == 34 || prev == 40) {
+                    return switch (steps) {
+                        case 1 -> 38;
+                        case 2 -> 32;
+                        case 3 -> 10;
+                        case 4 -> 11;
+                        case 5 -> 12;
+                        default -> -1;
+                    };
+
+                }else if (prev == 25 || prev == 35 || prev == 41) {
+                    return switch (steps) {
+                        case 1 -> 39;
+                        case 2 -> 33;
+                        case 3 -> 15;
+                        case 4 -> 16;
+                        case 5 -> 17;
+                        default -> -1;
+                    };
+
+                }else if (prev == 0 || prev == 30 || prev == 36) {
+                    return switch (steps) {
+                        case 1 -> 40;
+                        case 2 -> 34;
+                        case 3 -> 20;
+                        case 4 -> 21;
+                        case 5 -> 22;
+                        default -> -1;
+                    };
+
                 }
+
                 break;
             case 41:
                 if (prev == 42) {
@@ -791,6 +851,7 @@ private int getPreviousPosition(int currentPos) {
                 }
                 break;
         }
+
         return -1;
     }
 

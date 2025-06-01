@@ -7,7 +7,10 @@ public class Piece {
     private int id;
     private int teamId;
     public int currentPositionIndex; // 0-31 mapping the board, + 31 for Finish
-    private int prevPositionIndex = 0;
+
+    private int[] prevPositions = new int[2]; // [0]=직전, [1]=그 전
+
+      private int prevPositionIndex = 0;
     private boolean isFinished;
     // --- New fields for grouping ---
     private List<Piece> stackedPieces; // Pieces this piece is carrying (if it's a leader)
@@ -24,6 +27,8 @@ public class Piece {
         this.isFinished = false;
         this.stackedPieces = new ArrayList<>();
         this.groupLeader = null;
+        prevPositions[0] = 0;
+        prevPositions[1] = 0;
     }
 
     public int getId() {
@@ -118,6 +123,11 @@ public class Piece {
     }
 
     public void moveTo(int newPositionIndex) {
+        System.out.printf("[DEBUG] moveTo: id=%d, from %d → %d (prev was %d)\n",
+                id, this.currentPositionIndex, newPositionIndex, this.prevPositionIndex);
+        prevPositions[1] = prevPositions[0];
+        prevPositions[0] = this.currentPositionIndex;
+
         this.prevPositionIndex = this.currentPositionIndex;
         this.currentPositionIndex = newPositionIndex;
         if (newPositionIndex == 31) { // Finish is 31
@@ -130,9 +140,14 @@ public class Piece {
                 stackedPiece.isFinished = this.isFinished;
             }
         }
+        debugPrint();
     }
 
     public void setCurrentPositionIndex(int idx) {
+        System.out.printf("[DEBUG] setCurrentPositionIndex: id=%d, from %d → %d (prev was %d)\n",
+                id, this.currentPositionIndex, idx, this.prevPositionIndex);
+        prevPositions[1] = prevPositions[0];
+        prevPositions[0] = this.currentPositionIndex;
         this.prevPositionIndex = this.currentPositionIndex;
         this.currentPositionIndex = idx;
         if (isGroupLeader()) {
@@ -140,7 +155,9 @@ public class Piece {
                 stacked.currentPositionIndex = idx;
             }
         }
+        debugPrint();
     }
+
 
 
     public void reset() {
@@ -188,8 +205,19 @@ public class Piece {
 
     public int getPrevPositionIndex() {
         return this.prevPositionIndex;
+
+    }
+    public int getPrevPositionIndexs() {
+        return prevPositions[0];
     }
 
+    public int getPrevPrevPositionIndex() {
+        return prevPositions[1];
+    }
+
+    public void debugPrint() {
+        System.out.printf("Piece[%d]: pos=%d, prev=%d, finished=%b\n", id, currentPositionIndex, prevPositionIndex, isFinished);
+    }
     @Override
     public String toString() {
         String base;
