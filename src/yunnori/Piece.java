@@ -7,6 +7,7 @@ public class Piece {
     private int id;
     private int teamId;
     public int currentPositionIndex; // 0-31 mapping the board, + 31 for Finish
+    private int prevPositionIndex = 0;
     private boolean isFinished;
     // --- New fields for grouping ---
     private List<Piece> stackedPieces; // Pieces this piece is carrying (if it's a leader)
@@ -117,6 +118,7 @@ public class Piece {
     }
 
     public void moveTo(int newPositionIndex) {
+        this.prevPositionIndex = this.currentPositionIndex;
         this.currentPositionIndex = newPositionIndex;
         if (newPositionIndex == 31) { // Finish is 31
             this.isFinished = true;
@@ -131,6 +133,7 @@ public class Piece {
     }
 
     public void setCurrentPositionIndex(int idx) {
+        this.prevPositionIndex = this.currentPositionIndex;
         this.currentPositionIndex = idx;
         if (isGroupLeader()) {
             for (Piece stacked : this.stackedPieces) {
@@ -178,6 +181,13 @@ public class Piece {
         if (steps > 0)
             return true;
         return false;
+    }
+    public void setPrevPositionIndex(int idx) {
+        this.prevPositionIndex = idx;
+    }
+
+    public int getPrevPositionIndex() {
+        return this.prevPositionIndex;
     }
 
     @Override

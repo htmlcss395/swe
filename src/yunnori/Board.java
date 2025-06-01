@@ -205,6 +205,9 @@ public class Board {
                         {20,29},{29,34},{34,35}
                 };
 
+
+
+
                 noCatchSet  = java.util.Set.of(0/*start*/);
                 break;
 
@@ -247,12 +250,12 @@ public class Board {
                     }
                 }
 
-                boardPoints[42] = new BoardPoint(cx, cy);   // C
+                boardPoints[42] = new BoardPoint(cx, cy);
 
                 for (int v = 0; v < 6; v++) {
-                    int vertex = v*5;       // 0,5,10,15,20,25
-                    int idx1   = 30 + v;    // 30‥35 (1/3)
-                    int idx2   = 36 + v;    // 36‥41 (2/3)
+                    int vertex = v*5;
+                    int idx1   = 30 + v;
+                    int idx2   = 36 + v;
 
                     BoardPoint pV = boardPoints[vertex];
                     boardPoints[idx1] = new BoardPoint(
@@ -278,20 +281,21 @@ public class Board {
                 }
 
 
-                this.pentagonEdges = edges;   // 같은 필드 재활용
+                this.pentagonEdges = edges;
 
                 mainRoute = new int[]{
-                        5,6,7,8,9,10,11,12,13,14,15,
-                        16,17,18,19,20,21,22,23,24,25,
-                        26,27,28,29,0,1,2,3,4,
-                        35,40,25,30,42
+                        5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+                        15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+                        25, 26, 27, 28, 29, 0, 1, 2, 3, 4,
+                        35, 40, 25, 30, 42
                 };
                 branchTable = new int[][]{
-                        {5,30},{30,36},{36,42},
-                        {10,31},{31,37},{37,42},
-                        {15,32},{32,38},{38,42},
-                        {20,33},{33,39},{39,42},
-                        {25,34},{34,40},{40,42}
+                        {0 ,30},{30,36},{36,42},
+                        {5 ,31},{31,40},{40,42},
+                        {10,32},{32,41},{41,42},
+                        {15,33},{33,37},{37,42},
+                        {20,34},{34,38},{38,42},
+                        {25,35},{35,39},{39,42}
                 };
                 noCatchSet = java.util.Set.of(5);   // hexagon start
                 break;
@@ -431,27 +435,38 @@ private int getPreviousPosition(int currentPos) {
                 // 0) 센터 탈출 예약이 있으면 최우선
                 if (piece.getCenterExitNext() != null) {
                     int tmp = piece.getCenterExitNext();
-                    piece.setCenterExitNext(null); // 예약 소모
+                    piece.setCenterExitNext(null);
+                    if (steps == 0) return tmp;
 
-                    if (steps == 0) {
-                        return tmp;
+                    int posOut = tmp;
+                    int remain = steps - 1;
+                    while (remain-- > 0) {
+                        int nxt = prevPos(posOut);
+                        if (nxt == posOut) break;
+                        posOut = nxt;
+                        if (posOut <= 29) break;
                     }
-                    piece.setCurrentPositionIndex(tmp);
-                    return calculateTargetPosition(piece, steps - 1);
+                    if (remain <= 0 || posOut <= 29) return posOut;
+
+                    // 아직 스텝이 남았고 외곽에도 못 갔으면 재귀로 계속
+                    piece.setCurrentPositionIndex(posOut);
+                    return calculateTargetPosition(piece, remain);
                 }
 
-                // ─────────────────────────────────────────────────────
                 // 1) 한 칸씩 이동하면서, “센터에 도달(=35)했는지”를 체크
                 for (int i = 0; i < steps; i++) {
+                    piece.setPrevPositionIndex(pos);
+
                     int prev = pos;
                     int nxt  = nextPos(prev, i == 0);
+                    piece.setCurrentPositionIndex(nxt);
 
                     // 1-1) 다음 위치가 센터(35)라면
                     if (nxt == 35) {
                         // (1-1-가) “마지막 스텝에 멈추는 경우”
                         if (i == steps - 1) {
                             // 멈춘 prev(30~34 중 하나)에 따라, 다음 턴 탈출 인덱스를 예약
-                            //예: prev=31 → ((31-30+3)%5)+30 = 34
+                            //예: prev=31 -> ((31-30+3)%5)+30 = 34
                             int exitIdx2 = ((prev - 30 + 3) % 5) + 30;
                             piece.setCenterExitNext(exitIdx2);
 
@@ -461,7 +476,7 @@ private int getPreviousPosition(int currentPos) {
                         }
                         //(1-1-나) “중간에 센터를 지나치는 경우”
                         else {
-                            // ↳ prev가 32라면 ((32-30+1)%5)+30 = 33 (→ 33→28→15… 경로)
+                            // ↳ prev가 32라면 ((32-30+1)%5)+30 = 33 (-> 33->28->15… 경로)
                             // ↳ prev가 33라면 ((33-30+1)%5)+30 = 34
                             int passExit = ((prev - 30 + 1) % 5) + 30;
                             pos = passExit;
@@ -482,22 +497,303 @@ private int getPreviousPosition(int currentPos) {
 
 
 
-
-
             case HEXAGON: {
-                for (int i = 0; i < steps; i++) {
-                    int nxt = nextPos(pos, i == 0);
-                    if (nxt == pos) break;
+                int jump = hardMove(pos, piece.getPrevPositionIndex(), steps);
+                if (jump != -1) {
+                    piece.setCurrentPositionIndex(jump);
+                    return jump;
+                }
+
+                for (int i=0;i<steps;i++){
+                    int prev = pos;
+                    int nxt  = nextPos(prev, i==0);
+
+                    if (nxt == 42){
+                        if (i == steps-1){
+                            int exit = (prev>=30&&prev<=35)? prev+6 : prev-6;
+                            piece.setCenterExitNext(exit);
+                            pos = 42; break;
+                        } else {
+                            pos = (prev>=30&&prev<=35)? prev+6 : prev-6;
+                            continue;
+                        }
+                    }
+
+                    if (nxt == prev) break;
                     pos = nxt;
                 }
+                piece.setCurrentPositionIndex(pos);
                 return pos;
             }
 
+
+//            case HEXAGON: {
+//                if (piece.getCenterExitNext() != null) {
+//                    int tmp = piece.getCenterExitNext();
+//                    piece.setCenterExitNext(null);
+//
+//                    if (steps == 0) {
+//                        piece.setCurrentPositionIndex(tmp); // 반드시 이동 직전 prev 갱신
+//                        return tmp;
+//                    }
+//                    piece.setCurrentPositionIndex(tmp);
+//                    return calculateTargetPosition(piece, steps - 1);
+//                }
+//                int jump = hardMove(pos, piece.getPrevPositionIndex(), steps);
+//
+//                if (jump != -1) {              // 특수 이동이면
+//                    piece.setCurrentPositionIndex(jump);
+//                    return jump;
+//                }
+//
+//                for (int i = 0; i < steps; i++) {
+//                    int prev = pos;
+//
+//                    if (i == 0 && prev == 5) {
+//                        switch (i + 1) {
+//                            case 1:
+//                                pos = 31;
+//                                break;
+//                            case 2:
+//                                pos = 37;
+//                                break;
+//                            case 3:
+//                                pos = 42;
+//                                break;
+//                            case 4:
+//                                pos = 40;
+//                                break;
+//                            case 5:
+//                                pos = 34;
+//                                break;
+//                            default:
+//                                break;
+//                        }
+//                        continue;
+//                    }
+//
+//                    if (i == 0 && prev == 31) {
+//                        switch (i + 1) {
+//                            case 1:
+//                                pos = 37;
+//                                break;
+//                            case 2:
+//                                pos = 42;
+//                                break;
+//                            case 3:
+//                                pos = 40;
+//                                break;
+//                            case 4:
+//                                pos = 34;
+//                                break;
+//                            case 5:
+//                                pos = 20;
+//                                break;
+//                            default:
+//                                break;
+//                        }
+//                        continue;
+//                    }
+//
+//                    if (i == 0 && prev == 37) {
+//                        switch (i + 1) {
+//                            case 1:
+//                                pos = 42;
+//                                break;
+//                            case 2:
+//                                pos = 40;
+//                                break;
+//                            case 3:
+//                                pos = 34;
+//                                break;
+//                            case 4:
+//                                pos = 20;
+//                                break;
+//                            case 5:
+//                                pos = 21;
+//                                break;
+//                            default:
+//                                break;
+//                        }
+//                        continue;
+//                    }
+//
+//                    if (i == 0 && prev == 42) {
+//                        int fromPrev = piece.getPrevPositionIndex();
+//                        if (fromPrev == 5 || fromPrev == 31 || fromPrev == 37) {
+//                            switch (i + 1) {
+//                                case 1:
+//                                    pos = 41;
+//                                    break;
+//                                case 2:
+//                                    pos = 35;
+//                                    break;
+//                                case 3:
+//                                    pos = 26;
+//                                    break;
+//                                case 4:
+//                                    pos = 27;
+//                                    break;
+//                                case 5:
+//                                    pos = 28;
+//                                    break;
+//                                default:
+//                                    break;
+//                            }
+//                            continue;
+//                        }
+//                    }
+//
+//                    if (i == 0 && prev == 41 && piece.getPrevPositionIndex() == 42) {
+//                        switch (i + 1) {
+//                            case 1:
+//                                pos = 35;
+//                                break;
+//                            case 2:
+//                                pos = 25;
+//                                break;
+//                            case 3:
+//                                pos = 26;
+//                                break;
+//                            case 4:
+//                                pos = 27;
+//                                break;
+//                            case 5:
+//                                pos = 28;
+//                                break;
+//                            default:
+//                                break;
+//                        }
+//                        continue;
+//                    }
+//
+//                    int nxt = nextPos(prev, i == 0);
+//                    if (nxt == 42) {
+//                        if (i == steps - 1) {
+//                            int exitIndex;
+//                            if (prev >= 30 && prev <= 35) {
+//                                exitIndex = prev + 6;
+//                            } else if (prev >= 36 && prev <= 41) {
+//                                exitIndex = prev - 6;
+//                            } else {
+//                                exitIndex = prev;
+//                            }
+//                            piece.setCenterExitNext(exitIndex);
+//                            piece.setCurrentPositionIndex(42);
+//                            pos = 42;
+//                            break;
+//                        } else {
+//                            int passExit;
+//                            if (prev >= 30 && prev <= 35) {
+//                                passExit = ((prev - 30 + 3) % 6) + 30;
+//                            } else if (prev >= 36 && prev <= 41) {
+//                                passExit = ((prev - 36 + 3) % 6) + 36;
+//                            } else {
+//                                passExit = prev;
+//                            }
+//                            piece.setCurrentPositionIndex(passExit);
+//                            pos = passExit;
+//                            continue;
+//                        }
+//                    }
+//
+//                    if (nxt == prev) break;
+//                    pos = nxt;   // 💡 여기는 Piece 객체에 직접 반영 X
+//                }
+//
+//                piece.setCurrentPositionIndex(pos);  // ✅ 루프 끝난 후 최종 업데이트
+//                return pos;
+//            }
+
+
+
             default:
-                // 혹시 모를 예외
                 return pos;
         }
     }
+
+
+
+
+
+
+
+    private int hardMove(int start, int prev, int steps) {
+        if (steps < 1 || steps > 5) return -1;
+        switch (start) {
+            case 5:
+                return switch (steps) {
+                    case 1 -> 31;
+                    case 2 -> 37;
+                    case 3 -> 42;
+                    case 4 -> 40;
+                    case 5 -> 34;
+                    default -> -1;
+                };
+            case 31:
+                return switch (steps) {
+                    case 1 -> 37;
+                    case 2 -> 42;
+                    case 3 -> 40;
+                    case 4 -> 34;
+                    case 5 -> 20;
+                    default -> -1;
+                };
+            case 37:
+                return switch (steps) {
+                    case 1 -> 42;
+                    case 2 -> 40;
+                    case 3 -> 34;
+                    case 4 -> 20;
+                    case 5 -> 21;
+                    default -> -1;
+                };
+            case 42:
+                if (prev == 5) {
+                    return switch (steps) {
+                        case 1 -> 41;
+                        case 2 -> 35;
+                        case 3 -> 26;
+                        case 4 -> 27;
+                        case 5 -> 28;
+                        default -> -1;
+                    };
+                } else if (prev == 31) {
+                    return switch (steps) {
+                        case 1 -> 35;
+                        case 2 -> 35;
+                        case 3 -> 26;
+                        case 4 -> 27;
+                        case 5 -> 20;
+                        default -> -1;
+                    };
+                } else if (prev == 37) {
+                    return switch (steps) {
+                        case 1 -> 35;
+                        case 2 -> 35;
+                        case 3 -> 26;
+                        case 4 -> 27;
+                        case 5 -> 21;
+                        default -> -1;
+                    };
+                }
+                break;
+            case 41:
+                if (prev == 42) {
+                    return switch (steps) {
+                        case 1 -> 35;
+                        case 2 -> 25;
+                        case 3 -> 26;
+                        case 4 -> 27;
+                        case 5 -> 28;
+                        default -> -1;
+                    };
+                }
+                break;
+        }
+        return -1;
+    }
+
 
 
 
@@ -554,11 +850,11 @@ private int getPreviousPosition(int currentPos) {
                 return from;
 
             case PENTAGON:
-                /* 1) 첫 스텝이면서 꼭짓점(5·10·15·20)이면 → 안쪽 분기(25‥34) */
+                /* 1) 첫 스텝이면서 꼭짓점(5·10·15·20)이면 -> 안쪽 분기(25‥34) */
                 if (firstStep && from % 5 == 0 && from > 0 && from <= 20) {
                     for (int[] e : branchTable)
                         if (e[0] == from && e[1] >= 25 && e[1] <= 34)
-                            return e[1];            // 5→26, 10→27, 15→28, 20→29
+                            return e[1];            // 5->26, 10->27, 15->28, 20->29
                 }
 
                 /* 2) 바깥 둘레(0‥24) 그대로 진행 */
@@ -573,15 +869,35 @@ private int getPreviousPosition(int currentPos) {
 
 
 
-            case HEXAGON:
-                for (int[] b : branchTable)
-                    if (b[0] == from) return b[1];
-                for (int i = 0; i < mainRoute.length - 1; i++)
-                    if (mainRoute[i] == from) return mainRoute[i + 1];
+            case HEXAGON: {
+                if (firstStep && from % 5 == 0 && from > 0 && from <= 24) {
+                    for (int[] e : branchTable)
+                        if (e[0] == from && e[1] >= 30 && e[1] <= 35)
+                            return e[1];          // 5→30, 10→31, 15→32, 20→33, 25→34
+                }
+
+                /* ② 외곽 기본 전진 : 0‥29 → (from+1)%30 */
+                if (from >= 0 && from <= 29)
+                    return (from + 1) % 30;
+
+                /* ③ interior1(30‥35) → interior2(36‥41) */
+                if (from >= 30 && from <= 35) {
+                    for (int[] e : branchTable)
+                        if (e[0] == from && e[1] >= 36 && e[1] <= 41)
+                            return e[1];
+                }
+
+                /* ④ interior2(36‥41) → 센터(42) */
+                if (from >= 36 && from <= 41)
+                    return 42;
+
+                /* ⑤ 그 외 이동 불가 */
                 return from;
+            }
+
+
 
             default:
-                // 혹시나 모를 예외
                 return from;
         }
     }
