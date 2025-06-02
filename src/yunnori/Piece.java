@@ -6,19 +6,26 @@ import java.util.List;
 public class Piece {
     private int id;
     private int teamId;
-    public int currentPositionIndex; // 0-31 mapping the board, + 31 for Finish
-
-    private int[] prevPositions = new int[2]; // [0]=직전, [1]=그 전
-
-      private int prevPositionIndex = 0;
+    public int currentPositionIndex;
     private boolean isFinished;
+    private BoardType boardType;
+
     // --- New fields for grouping ---
     private List<Piece> stackedPieces; // Pieces this piece is carrying (if it's a leader)
     private Piece groupLeader; // The leader of the group this piece belongs to (if not the leader itself)
 
-    private Integer centerExitNext = null;   // 35에 서서 ‘다음에 34/33 …’ 으로 나갈 곳
-    public Integer getCenterExitNext()        { return centerExitNext; }
-    public void    setCenterExitNext(Integer i){ centerExitNext = i;   }
+    // TODO: TO BE DELTED; BULLSHIT
+    private int[] prevPositions = new int[2]; // [0]=직전, [1]=그 전
+    private int prevPositionIndex = 0;
+    private Integer centerExitNext = null; // 35에 서서 ‘다음에 34/33 …’ 으로 나갈 곳
+
+    public Integer getCenterExitNext() {
+        return centerExitNext;
+    }
+
+    public void setCenterExitNext(Integer i) {
+        centerExitNext = i;
+    }
 
     public Piece(int id, int teamId) {
         this.id = id;
@@ -75,8 +82,7 @@ public class Piece {
     public void addToStack(Piece pieceToAdd) {
         if (pieceToAdd == this || pieceToAdd.getTeamId() != this.teamId || pieceToAdd.isStacked()) {
             // Cannot stack itself, an opponent, or a piece already stacked by someone else.
-            // If pieceToAdd is already stacked, its current leader should be targeted for
-            // merging if desired.
+            // If pieceToAdd is already stacked, its current leader should be targeted for merging if desired.
             return;
         }
         if (isStacked()) {
@@ -122,17 +128,15 @@ public class Piece {
         }
     }
 
-    public void moveTo(int newPositionIndex) {
-        System.out.printf("[DEBUG] moveTo: id=%d, from %d → %d (prev was %d)\n",
-                id, this.currentPositionIndex, newPositionIndex, this.prevPositionIndex);
+    public void moveTo(int newPositionIndex, Board board) {
         prevPositions[1] = prevPositions[0];
         prevPositions[0] = this.currentPositionIndex;
 
         this.prevPositionIndex = this.currentPositionIndex;
         this.currentPositionIndex = newPositionIndex;
-        if (newPositionIndex == 31) { // Finish is 31
+
+        if (newPositionIndex == board.getFinishPointIndex())
             this.isFinished = true;
-        }
 
         if (isGroupLeader()) {
             for (Piece stackedPiece : stackedPieces) {
@@ -140,12 +144,10 @@ public class Piece {
                 stackedPiece.isFinished = this.isFinished;
             }
         }
-        debugPrint();
+        // debugPrint();
     }
 
     public void setCurrentPositionIndex(int idx) {
-        System.out.printf("[DEBUG] setCurrentPositionIndex: id=%d, from %d → %d (prev was %d)\n",
-                id, this.currentPositionIndex, idx, this.prevPositionIndex);
         prevPositions[1] = prevPositions[0];
         prevPositions[0] = this.currentPositionIndex;
         this.prevPositionIndex = this.currentPositionIndex;
@@ -157,8 +159,6 @@ public class Piece {
         }
         debugPrint();
     }
-
-
 
     public void reset() {
         leaveGroup(); // If stacked, leave its current group.
@@ -180,7 +180,7 @@ public class Piece {
         this.groupLeader = null;
     }
 
-    public boolean canMove(int steps) {
+    public boolean canMove(int steps, Board board) {
         if (isFinished()) {
             return false;
         }
@@ -188,9 +188,10 @@ public class Piece {
             // independently
             return false;
         }
-        // Original logic for leaders or individual pieces
-        if (currentPositionIndex == 31)
+        // Update the logic to check whether the game is finished or not
+        if (currentPositionIndex == board.getFinishPointIndex())
             return false;
+
         if (currentPositionIndex == 0 && steps == -1)
             return true;
         if (steps == -1)
@@ -199,6 +200,7 @@ public class Piece {
             return true;
         return false;
     }
+
     public void setPrevPositionIndex(int idx) {
         this.prevPositionIndex = idx;
     }
@@ -207,6 +209,7 @@ public class Piece {
         return this.prevPositionIndex;
 
     }
+
     public int getPrevPositionIndexs() {
         return prevPositions[0];
     }
@@ -216,8 +219,10 @@ public class Piece {
     }
 
     public void debugPrint() {
-        System.out.printf("Piece[%d]: pos=%d, prev=%d, finished=%b\n", id, currentPositionIndex, prevPositionIndex, isFinished);
+        System.out.printf("Piece[%d]: pos=%d, prev=%d, finished=%b\n", id, currentPositionIndex, prevPositionIndex,
+                isFinished);
     }
+
     @Override
     public String toString() {
         String base;

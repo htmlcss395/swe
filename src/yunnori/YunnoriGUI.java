@@ -5,11 +5,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-// ... other imports ...
 import java.util.List;
-import java.util.Random;
+// import java.util.Random;
 import java.util.stream.Collectors;
-
 
 public class YunnoriGUI extends JFrame implements ActionListener {
 
@@ -51,12 +49,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         this.numTeams = numTeams; // Store for restart
         this.numPieces = numPieces; // Store for restart
         this.isTestMode = isTestMode; // Store for restart
-
-        // Initialize game components (Board, Teams, Roller) - will be done in
-        // initializeGameLogic()
-        // board = new Board(); // Moved to initializeGameLogic
-        // teams = new ArrayList<>(); // Moved
-        // roller = new YunnoriRoller(isTestMode); // Moved
+        this.boardType = boardType; // Store for restart
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1780, 1200);
@@ -105,7 +98,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
 
     // New method to initialize/re-initialize game logic components and BoardPanel
     private void initializeGameLogicAndBoardPanel(BoardType boardType) {
-        //board = new Board();
+        // board = new Board();
         board = new Board(boardType);
         teams = new ArrayList<>();
         for (int i = 0; i < numTeams; i++) {
@@ -179,25 +172,13 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         boardPanel.repaint();
     }
 
-
-
-
-
     private void executeMove(Piece pieceToMove, YunnoriRoll rollUsed) {
         // pieceToMove is guaranteed to be a leader or an individual piece due to
         // getPlayablePieces & piece selection logic
         int targetPosition = board.calculateTargetPosition(pieceToMove, rollUsed.getSteps());
         int oldPosition = pieceToMove.getCurrentPositionIndex();
-        pieceToMove.moveTo(targetPosition);
 
-
-        // Temporarily store pieces pieceToMove is currently carrying.
-        // This is because pieceToMove might merge with another group, and its current
-        // identity as a leader changes.
-        // The addToStack logic in Piece.java is designed to handle merging.
-        // No need to detach here if addToStack correctly absorbs.
-
-        pieceToMove.moveTo(targetPosition); // Moves pieceToMove and its entire stack (if any)
+        pieceToMove.moveTo(targetPosition, this.board); // Moves pieceToMove and its entire stack (if any)
 
         String moveMsg = teams.get(currentPlayerIndex) + " " + pieceToMove.toString() + " moved from " + oldPosition
                 + " to " + pieceToMove.getCurrentPositionIndex() + " with " + rollUsed.name() + ".";
@@ -205,7 +186,8 @@ public class YunnoriGUI extends JFrame implements ActionListener {
 
         // --- Grouping Logic ---
         // Only group if not at start/finish and not already finished
-        if (pieceToMove.getCurrentPositionIndex() > 0 && pieceToMove.getCurrentPositionIndex() < 31
+        if (pieceToMove.getCurrentPositionIndex() > board.getStartPointIndex()
+                && pieceToMove.getCurrentPositionIndex() < board.getFinishPointIndex()
                 && !pieceToMove.isFinished()) {
             Team currentTeam = teams.get(currentPlayerIndex);
             List<Piece> friendlyPiecesAtTarget = new ArrayList<>();
@@ -239,11 +221,14 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         }
         // --- End Grouping Logic ---
 
+        // --- Catching logic ---
         // Check for catches only if the piece is on a catchable part of the board
         boolean caughtThisMove = false;
         // Check for catches only if the piece is on a catchable part of the board
-        if (pieceToMove.getCurrentPositionIndex() > 0 && pieceToMove.getCurrentPositionIndex() < 31) {
-         //   List<Piece> caughtOpponentPieces = board.findOpponentPiecesAt(pieceToMove.getCurrentPositionIndex(),
+        if (pieceToMove.getCurrentPositionIndex() > board.getStartPointIndex()
+                && pieceToMove.getCurrentPositionIndex() < board.getFinishPointIndex()) {
+            // List<Piece> caughtOpponentPieces =
+            // board.findOpponentPiecesAt(pieceToMove.getCurrentPositionIndex(),
             // findOpponentPiecesAt returns leaders or individual opponent pieces
             List<Piece> caughtOpponentLeadersOrIndividuals = board.findOpponentPiecesAt(
                     pieceToMove.getCurrentPositionIndex(),
@@ -271,8 +256,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
             updateStatus(teams.get(currentPlayerIndex) + " " + pieceToMove.toString() + " moved from " + oldPosition
                     + " to " + pieceToMove.getCurrentPositionIndex() + " with " + rollUsed.name() + ".");
         }
-        // No need for the else if (!caughtThisMove) for basic move message, as it's
-        // printed earlier.
+        // No need for the else if (!caughtThisMove) for basic move message, as it is printed earlier.
         if (caughtThisMove) {
             catchOccurredInThisPhase = true;
         }
@@ -298,8 +282,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         if (!rollsToProcess.isEmpty()) {
             YunnoriRoll currentRoll = rollsToProcess.get(0);
             for (Piece piece : playableLeadersOrIndividuals) {
-                // isValidMoveStart uses piece.canMove() which checks !isStacked() and
-                // !isFinished()
+                // isValidMoveStart uses piece.canMove() which checks !isStacked() and !isFinished()
                 if (board.isValidMoveStart(piece, currentRoll.getSteps())) {
                     piecesWithValidMove.add(piece);
                 }
@@ -321,7 +304,8 @@ public class YunnoriGUI extends JFrame implements ActionListener {
             currentState = GameState.WAITING_FOR_PIECE_SELECTION;
             updateStatus("Rolls to process: "
                     + rollsToProcess.stream().map(Enum::name).collect(Collectors.joining(", "))
-                    + ". Select a piece/group.");            List<Integer> highlightPositions = new ArrayList<>();
+                    + ". Select a piece/group.");
+            List<Integer> highlightPositions = new ArrayList<>();
             for (Piece p : piecesWithValidMove) { // These are leaders/individuals
                 highlightPositions.add(p.getCurrentPositionIndex());
             }
@@ -332,19 +316,31 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         }
     }
 
-    // pieceClicked is called when a piece is chosen (either directly or from a
-    // stack prompt)
+    // pieceClicked is called when a piece is chosen (either directly or from a stack prompt)
     public void pieceClicked(Piece piece) { // 'piece' here will be a leader or an individual
+
+        // newly added to modify highlight logic
+        if (this.selectedPiece != null && this.selectedPiece == piece && !rollsToProcess.isEmpty()) {
+            // If the same piece is clicked again and it was already selected for the current roll phase, this might be part of the re-triggering.
+            // However, the primary issue is the automatic re-entry.
+        }
+        this.selectedPiece = piece; // Mark this piece as the one being processed for *this* click event.
+
         if (currentState == GameState.WAITING_FOR_PIECE_SELECTION
                 || currentState == GameState.WAITING_FOR_STACK_SELECTION) {
             if (piece.getTeamId() == currentPlayerIndex && !rollsToProcess.isEmpty()) {
                 YunnoriRoll currentRoll = rollsToProcess.get(0);
-                // piece.canMove() is checked by isValidMoveStart
+
                 if (board.isValidMoveStart(piece, currentRoll.getSteps())) {
                     updateStatus("Piece/group " + piece + " selected. Moving with " + currentRoll.name() + ".");
                     rollsToProcess.remove(0);
-                    executeMove(piece, currentRoll);
-                    boardPanel.setHighlight(null, null);
+
+                    Piece pieceToActOn = piece; // The piece that was clicked/chosen
+                    this.selectedPiece = null; // <<<< TRY THIS <<<< Clear the GUI's general selectedPiece
+                    boardPanel.setHighlight(null, null); // Clear any old highlights from BoardPanel's perspective
+
+                    executeMove(pieceToActOn, currentRoll); // This will eventually call checkPlayableMoves, which will set new highlights.
+
                 } else {
                     updateStatus("Piece/group " + piece + " cannot move with " + currentRoll + ". Choose another.");
                     // If selection came from stack prompt, revert to general piece selection
@@ -355,21 +351,25 @@ public class YunnoriGUI extends JFrame implements ActionListener {
                 }
             } else {
                 updateStatus("That's not your piece/group or no rolls available!");
+                this.selectedPiece = null;
                 if (currentState == GameState.WAITING_FOR_STACK_SELECTION) {
                     currentState = GameState.WAITING_FOR_PIECE_SELECTION;
                     checkPlayableMoves();
+                } else {
+                    boardPanel.setHighlight(null, null); // Clear highlights if it's just a wrong click
                 }
             }
         } else {
             updateStatus("Wait for your turn to select a piece/group, or roll first.");
+            this.selectedPiece = null; // Not time to select
+            boardPanel.setHighlight(null, null);
         }
-        boardPanel.repaint();
+        // boardPanel.repaint();
     }
 
     // pieceStackClicked method (remains the same)
     public void pieceStackClicked(List<Piece> piecesAtStack, int clickX, int clickY) {
-        // piecesAtStack from BoardPanel now contains leaders or individual pieces at
-        // the clicked visual point.
+        // piecesAtStack from BoardPanel now contains leaders or individual pieces at the clicked visual point.
         // These are already filtered by Team.getInteractivePiecesAt().
         if (currentState == GameState.WAITING_FOR_PIECE_SELECTION) {
             List<Piece> playablePiecesOrGroupsAtStack = new ArrayList<>();
@@ -388,8 +388,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
                 updateStatus("Auto-selecting the only playable piece/group: " + playablePiecesOrGroupsAtStack.get(0));
                 pieceClicked(playablePiecesOrGroupsAtStack.get(0)); // Pass the leader/individual
             } else {
-                // Multiple leaders/individuals of the current player are at the same visual
-                // spot and are playable
+                // Multiple leaders/individuals of the current player are at the same visual spot and are playable
                 this.piecesAtClickedStack = playablePiecesOrGroupsAtStack;
                 currentState = GameState.WAITING_FOR_STACK_SELECTION;
                 updateStatus("Multiple playable pieces/groups at this point. Choose one:");
@@ -479,11 +478,10 @@ public class YunnoriGUI extends JFrame implements ActionListener {
 
         if (e.getSource() == quitButton) {
             System.exit(0);
-        } else if (e.getSource() == restartButton) {
-            // Restart is allowed only if game is over
+        } else if (e.getSource() == restartButton) { // Restart is allowed only if game is over
             if (currentState == GameState.GAME_OVER) {
                 updateStatus("\n--- Restarting Game ---");
-                initializeGameLogicAndBoardPanel(this.boardType);
+                initializeGameLogicAndBoardPanel(boardType);
                 startGame();
             }
         } else if (currentState == GameState.GAME_OVER) {
@@ -514,7 +512,6 @@ public class YunnoriGUI extends JFrame implements ActionListener {
     // startRollingPhase method (remains the same)
     private void startRollingPhase() {
         updateStatus(teams.get(currentPlayerIndex) + " is rolling...");
-        // ... (rest of the method from previous version) ...
         if (isTestMode) {
             boolean continueTestRolling = true;
             while (continueTestRolling) {
@@ -627,10 +624,10 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         checkPlayableMoves();
     }
 
+    /*
     private void initializeGameLogicAndBoardPanel() {
         initializeGameLogicAndBoardPanel(this.boardType);
-    }
-
+    }*/
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
@@ -647,7 +644,8 @@ public class YunnoriGUI extends JFrame implements ActionListener {
                     UIManager.put("Label.font", dialogFont); // For labels within option panes
                     UIManager.put("ComboBox.font", dialogFont);
 
-                    String[] boardTypes = { "square", "pentagon", "hexagon" };                    int boardTypeIndex = JOptionPane.showOptionDialog(
+                    String[] boardTypes = { "Rectangle", "Pentagon", "Hexagon" };
+                    int boardTypeIndex = JOptionPane.showOptionDialog(
                             null,
                             "Select the type of Yutnori board:",
                             "Board Type",
@@ -695,7 +693,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
                     boolean isTestMode = (testModeOption == JOptionPane.YES_OPTION);
 
                     try {
-                        new YunnoriGUI(numTeams, numPieces, isTestMode, boardType); // boardType 전달!
+                        new YunnoriGUI(numTeams, numPieces, isTestMode, boardType);
                     } catch (Exception e) {
                         System.err.println("\n--- An error occurred during GUI setup or game initialization ---");
                         e.printStackTrace();

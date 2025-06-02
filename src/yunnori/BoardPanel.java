@@ -16,8 +16,8 @@ import java.awt.event.MouseEvent;
 public class BoardPanel extends JPanel {
     public Board board;
     private List<Team> teams;
-    private int pieceSize = 25; // scaled from 30
-    public int pointSize = 20; // scaled from 15
+    private int pieceSize = 30;
+    public int pointSize = 15;
 
     private YunnoriGUI guiController;
 
@@ -69,26 +69,18 @@ public class BoardPanel extends JPanel {
                         guiController.pieceStackClicked(piecesAtThisPoint, clickX, clickY);
                         return;
                     } else {
-                        // Clicked on an empty board point, let guiController handle if needed
-                        // (though current boardClicked is more for deselection)
-                        // If we stop iterating here, clicks on empty points with no pieces nearby won't
-                        // deselect.
-                        // So, we might want to continue checking or call boardClicked only if no piece
-                        // stack is found after checking all points.
-                        // For now, if a point is clicked, and it has pieces, we handle it. If not, the
-                        // click falls through.
-                        // This means guiController.boardClicked might be called if the loop finishes
-                        // without finding pieces.
-                        // Let's break if a point is identified, piece or not, to avoid multiple point
-                        // processing.
+                        // Clicked on an empty board point, let guiController handle if needed (though current boardClicked is more for deselection)
+                        // If we stop iterating here, clicks on empty points with no pieces nearby won't deselect.
+                        // So, we might want to continue checking or call boardClicked only if no piece stack is found after checking all points.
+                        // For now, if a point is clicked, and it has pieces, we handle it. If not, the click falls through.
+                        // This means guiController.boardClicked might be called if the loop finishes without finding pieces.
+                        // Let's break if a point is identified, piece or not, to avoid multiple point processing.
                         // The original logic was to break; if pieces were found.
                         // If no pieces, it would fall through to boardClicked.
-                        // This seems fine. If point is empty, this loop doesn't find pieces, falls to
-                        // boardClicked.
-
+                        // This seems fine. If point is empty, this loop doesn't find pieces, falls to boardClicked.
 
                         continue;
-                        //   break;
+                        // break;
                         // Found the clicked point, whether it has pieces or not.
                         // If it had pieces, it's handled. If not, loop continues or exits.
                         // This break ensures we only process one "board point" per click.
@@ -111,7 +103,6 @@ public class BoardPanel extends JPanel {
                 RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setColor(Color.BLACK);
         g2d.setStroke(new BasicStroke(2));
-
 
         if (board.getBoardType() == BoardType.RECTANGLE) {
             for (int i = 0; i < 20; i++)
@@ -223,19 +214,20 @@ public class BoardPanel extends JPanel {
             }
 
         } else {
-            for (int[] e : board.getEdges()) autoDrawLine(g2d, e[0], e[1]);
+            for (int[] e : board.getEdges())
+                autoDrawLine(g2d, e[0], e[1]);
         }
-
 
         int N = board.getPointCount();
         for (int i = 0; i < N; i++) {
             Board.BoardPoint point = board.getBoardPoint(i);
-            if (point == null) continue;
+            if (point == null)
+                continue;
 
             if (validMoveTargets != null && validMoveTargets.contains(i)) {
                 g2d.setColor(Color.YELLOW);
                 int hs = pointSize * 3;
-                g2d.fillOval(point.x - hs/2, point.y - hs/2, hs, hs);
+                g2d.fillOval(point.x - hs / 2, point.y - hs / 2, hs, hs);
             }
 
             int currentSize = pointSize;
@@ -245,66 +237,71 @@ public class BoardPanel extends JPanel {
                 if (i == 0 || i == 5 || i == 10 || i == 15 || i == 23)
                     currentSize = pointSize * 2;
                 else if (i == 20 || i == 30) {
-                    currentSize = pointSize * 2; dotColor = Color.MAGENTA;
+                    currentSize = pointSize * 2;
+                    dotColor = Color.MAGENTA;
                 } else if (i == 31) {
-                    currentSize = pointSize * 2; dotColor = Color.CYAN;
+                    currentSize = pointSize * 2;
+                    dotColor = Color.CYAN;
                 }
             } else if (board.getBoardType() == BoardType.PENTAGON) {
-                if (i == 0)  drawText(g2d, "시작", point, currentSize,  1);
-                else if (i == 10) drawText(g2d, "P", point, currentSize,-1);
-                else if (i == 25) drawText(g2d, "25 ", point, currentSize,-1);
-                else if (i == 35) drawText(g2d, "C", point, currentSize, 1);
+                if (i == 0)
+                    drawText(g2d, "시작", point, currentSize, 1);
+                else if (i == 10)
+                    drawText(g2d, "P", point, currentSize, -1);
+                else if (i == 25)
+                    drawText(g2d, "25 ", point, currentSize, -1);
+                else if (i == 35)
+                    drawText(g2d, "C", point, currentSize, 1);
                 if (i == 0 || i == 5 || i == 10 || i == 15 || i == 20 || i == 35)
                     currentSize = pointSize * 2;
-//                if      (i == 0)  drawText(g2d, "시작",   point, currentSize,  1);
-//                else if (i == 10) drawText(g2d, "참먹이1", point, currentSize, -1);
-//                else if (i == 20) drawText(g2d, "참먹이2", point, currentSize,  1);
-//                else if (i == 35) drawText(g2d, "C",      point, currentSize,  1);
-//                /* ---------- 강조 크기/색 ---------- */
-//                if (i == 10 || i == 20) {                       // 두 ‘참먹이’ 지점
-//                    dotColor    = Color.MAGENTA;
-//                    currentSize = pointSize * 2;
-//                }
-//                if (i == 0 || i == 5 || i == 10 || i == 15 || i == 20 || i == 35)
-//                    currentSize = pointSize * 2;
 
             } else if (board.getBoardType() == BoardType.HEXAGON) {
-                if (i == 0) drawText(g2d, "시작", point, currentSize,  1);
-                else if (i == 10) drawText(g2d, "P",    point, currentSize,-1);
-                else if (i == 42) drawText(g2d, "C",    point, currentSize, 1);
-                if(i==0 || i==5 || i==10 || i==15 || i==20 || i==25 || i==42)
+                if (i == 0)
+                    drawText(g2d, "시작", point, currentSize, 1);
+                else if (i == 10)
+                    drawText(g2d, "P", point, currentSize, -1);
+                else if (i == 42)
+                    drawText(g2d, "C", point, currentSize, 1);
+                if (i == 0 || i == 5 || i == 10 || i == 15 || i == 20 || i == 25 || i == 42)
 
                     currentSize = pointSize * 2;
             }
 
-
             g2d.setColor(dotColor);
-            g2d.fillOval(point.x - currentSize/2, point.y - currentSize/2,
+            g2d.fillOval(point.x - currentSize / 2, point.y - currentSize / 2,
                     currentSize, currentSize);
-
+            // FUCK OFF N
+            /*
             if (board.getBoardType() == BoardType.RECTANGLE) {
-                if (i == 0)      drawText(g2d, "시작", point, currentSize,  1);
-                else if (i == 20) drawText(g2d, "참먹이1", point, currentSize,-1);
-                else if (i == 30) drawText(g2d, "참먹이2", point, currentSize, 1);
-                else if (i == 31) drawText(g2d, "끝",   point, currentSize,-1);
-            }
+                if (i == 0)
+                    drawText(g2d, "시작", point, currentSize, 1);
+                else if (i == 20)
+                    drawText(g2d, "참먹이1", point, currentSize, -1);
+                else if (i == 30)
+                    drawText(g2d, "참먹이2", point, currentSize, 1);
+                else if (i == 31)
+                    drawText(g2d, "끝", point, currentSize, -1);
+            }*/
         }
-
 
         for (Team team : teams) {
             Color teamColor = switch (team.getId()) {
-                case 0 -> Color.RED;  case 1 -> Color.BLUE;
-                case 2 -> Color.GREEN;default -> Color.ORANGE;
+                case 0 -> Color.RED;
+                case 1 -> Color.BLUE;
+                case 2 -> Color.GREEN;
+                default -> Color.ORANGE;
             };
             // Iterate over *all* pieces to find leaders or unstacked pieces to draw
             for (Piece p : team.getPieces()) {
                 // Don't draw finished pieces on the board path
                 // Don't draw pieces that are stacked (they are represented by their leader)
-                if (p.isFinished() || p.isStacked()) continue;
+                if (p.isFinished() || p.isStacked())
+                    continue;
 
                 // Now 'piece' is either a leader or an un-stacked individual piece
                 Board.BoardPoint pt = board.getBoardPoint(p.getCurrentPositionIndex());
-                if (pt == null) continue;
+                if (pt == null)
+                    continue;
 
                 g2d.setColor(teamColor);
 
@@ -312,34 +309,31 @@ public class BoardPanel extends JPanel {
                 if (p == selectedPiece) {
                     g2d.setColor(Color.CYAN);
                     int hs = pieceSize + 10;
-                    g2d.fillOval(pt.x - hs/2, pt.y - hs/2, hs, hs);
+                    g2d.fillOval(pt.x - hs / 2, pt.y - hs / 2, hs, hs);
                     g2d.setColor(teamColor); // Reset to original team color for the piece itself
                 }
-                g2d.fillOval(pt.x - pieceSize/2, pt.y - pieceSize/2,
+                g2d.fillOval(pt.x - pieceSize / 2, pt.y - pieceSize / 2,
                         pieceSize, pieceSize);
-                g2d.setColor(team.getId()==2? Color.DARK_GRAY : Color.WHITE);
+                g2d.setColor(team.getId() == 2 ? Color.DARK_GRAY : Color.WHITE);
                 String txt = p.isGroupLeader() ? "x" + p.getGroupSize() : "" + (p.getId() + 1);
                 FontMetrics fm = g2d.getFontMetrics();
-                g2d.drawString(txt, pt.x - fm.stringWidth(txt)/2,
-                        pt.y + fm.getAscent()/2 - fm.getDescent()/2);
+                g2d.drawString(txt, pt.x - fm.stringWidth(txt) / 2,
+                        pt.y + fm.getAscent() / 2 - fm.getDescent() / 2);
             }
         }
     }
 
     private void drawText(Graphics2D g2d, String txt,
-                          Board.BoardPoint pt, int radius, int vdir){
+            Board.BoardPoint pt, int radius, int vdir) {
         Font orig = g2d.getFont();
         g2d.setFont(new Font("Gulim", Font.BOLD, 12));
         FontMetrics fm = g2d.getFontMetrics();
-        int x = pt.x - fm.stringWidth(txt)/2;
-        int y = pt.y + vdir*(radius + fm.getAscent());
+        int x = pt.x - fm.stringWidth(txt) / 2;
+        int y = pt.y + vdir * (radius + fm.getAscent());
         g2d.setColor(Color.BLACK);
         g2d.drawString(txt, x, y);
         g2d.setFont(orig);
     }
-
-
-
 
     private void autoDrawLine(Graphics2D g2d, int p1Index, int p2Index) {
         Board.BoardPoint p1 = board.getBoardPoint(p1Index);
@@ -349,6 +343,4 @@ public class BoardPanel extends JPanel {
         }
     }
 
-
 }
-
