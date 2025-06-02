@@ -235,25 +235,21 @@ public class Board {
             }
 
             case HEXAGON: {
-                // ───────────────────────────────────────────────
-                // 1) 배열 크기부터 43로 할당 (인덱스 0..42 사용)
-                // ───────────────────────────────────────────────
-                boardPoints = new BoardPoint[43];
 
-                // ───────────────────────────────────────────────
-                // 2) 중심(cx, cy)과 “바깥 꼭짓점” 반지름 r 계산
-                // ───────────────────────────────────────────────
+                /*
+                 * 1) 중심(cx, cy)과 “바깥 꼭짓점” 반지름 r 계산
+                 */
                 double m = 50;
                 double os = 900;
                 int cx = (int) (m + os / 2);
                 int cy = (int) (m + os / 2);
                 int r = (int) (os * 0.42); // 외곽 꼭짓점까지의 반지름
 
-                // ───────────────────────────────────────────────
-                // 3) 외곽 30칸(인덱스 0..29)을 6각형 둘레 형태로 배치
-                // - 시작 각도 = '왼쪽 위' 위치
-                // - 이후 시계 방향으로 30칸 균등 분할
-                // ───────────────────────────────────────────────
+                /*
+                 * 2) 외곽 30칸(인덱스 0..29)을 6각형 둘레 형태로 배치
+                 * - 시작 각도 = '왼쪽 위' 위치
+                 * - 이후 시계 방향으로 30칸 균등 분할
+                 */
                 double startAngle = Math.PI / 2 + Math.PI / 6 + 2 * Math.PI / 6;
                 for (int v = 0; v < 6; v++) {
                     double theta1 = startAngle + 2 * Math.PI * v / 6;
@@ -275,16 +271,16 @@ public class Board {
                 }
                 // 이 시점에 boardPoints[0..29]가 외곽 6각형 둘레가 됩니다.
 
-                // ───────────────────────────────────────────────
-                // 4) 인덱스 42를 “정 중앙”으로 배치
-                // ───────────────────────────────────────────────
+                /*
+                 * 3) 인덱스 42를 “정 중앙”으로 배치
+                 */
                 boardPoints[42] = new BoardPoint(cx, cy);
 
-                // ───────────────────────────────────────────────
-                // 5) “꼭짓점 → 중앙(42)” 방향 경로를 1/3, 2/3 지점에 할당:
-                // - 인덱스 30..35 = 6각형 꼭짓점(0,5,10,15,20,25)에서 중앙까지 1/3 지점
-                // - 인덱스 36..41 = 위 1/3 지점에서 중앙까지 2/3 지점
-                // ───────────────────────────────────────────────
+                /*
+                 * 4) “꼭짓점 → 중앙(42)” 방향 경로를 1/3, 2/3 지점에 할당:
+                 * - 인덱스 30..35 = 6각형 꼭짓점(0,5,10,15,20,25)에서 중앙까지 1/3 지점
+                 * - 인덱스 36..41 = 위 1/3 지점에서 중앙까지 2/3 지점
+                 */
                 for (int v = 0; v < 6; v++) {
                     int vertexIdx = v * 5; // 0,5,10,15,20,25
                     int idx1 = 30 + v; // 30..35
@@ -301,10 +297,10 @@ public class Board {
                             (pVert.y + cy * 2) / 3);
                 }
 
-                // ───────────────────────────────────────────────
-                // 6) (필요시) 엣지 리스트(edges)도 함께 설정
-                // → Canvas(그리기)에서 이어서 직선을 그릴 때 사용
-                // ───────────────────────────────────────────────
+                /*
+                 * 5) (필요시) 엣지 리스트(edges)도 함께 설정
+                 * -> Canvas(그리기)에서 이어서 직선을 그릴 때 사용
+                 */
                 ArrayList<int[]> edges = new ArrayList<>();
                 // 외곽 둘레 0..29 사이 연결
                 for (int i = 0; i < 30; i++) {
@@ -321,6 +317,9 @@ public class Board {
                 }
                 this.pentagonEdges = edges; // 필드 이름은 pentagonEdges이지만, HEXAGON에서도 활용
 
+                /*
+                 * 
+                 */
                 // ───────────────────────────────────────────────
                 // 7) 이동 경로(mainRoute)와 분기(branchTable), noCatchSet 설정
                 // ───────────────────────────────────────────────
@@ -347,13 +346,6 @@ public class Board {
 
         }
     }
-
-    // public BoardPoint getBoardPoint(int index) {
-    // if (index >= 0 && index <= 31) {
-    // return boardPoints[index];
-    // }
-    // return null;
-    // }
 
     public BoardPoint getBoardPoint(int i) {
         return (i >= 0 && i < boardPoints.length) ? boardPoints[i] : null;
@@ -426,9 +418,9 @@ public class Board {
                     } else if (currentSimulationPos == 0)
                         nextPosAfterOneStep = 1;
                     else if (currentSimulationPos == 20)
-                        nextPosAfterOneStep = 31; // End of outer -> Finish
+                        nextPosAfterOneStep = this.getFinishPointIndex(); // End of outer -> Finish
                     else if (currentSimulationPos == 30)
-                        nextPosAfterOneStep = 31; // Point before Finish -> Finish
+                        nextPosAfterOneStep = this.getFinishPointIndex(); // Point before Finish -> Finish
 
                     else if (currentSimulationPos == 22)
                         nextPosAfterOneStep = 23; // Path 1 (5->21->22->23) end
@@ -455,6 +447,7 @@ public class Board {
                     currentSimulationPos = this.finishPointIndex;
                 }
                 return currentSimulationPos;
+
             case PENTAGON:
                 if (piece.isFinished()) {
                     return this.finishPointIndex;
@@ -488,7 +481,7 @@ public class Board {
                             nextPosAfterOneStep = 30; // Path: 35->30->25
                         }
                     } else if (currentSimulationPos == 24)
-                        nextPosAfterOneStep = 36; // End of outer -> Finish
+                        nextPosAfterOneStep = this.getFinishPointIndex(); // End of outer -> Finish
 
                     // Path 1: 5->26->31->35
                     else if (currentSimulationPos == 26)
@@ -543,151 +536,104 @@ public class Board {
                 }
                 return currentSimulationPos;
             case HEXAGON:
-                return 0;
+                if (piece.isFinished()) {
+                    return this.finishPointIndex;
+                }
+                if (steps == -1) {
+                    if (originalPos == 0) {
+                        return 29;
+                    }
+                    return getPreviousPosition(originalPos);
+                }
+
+                for (int i = 0; i < steps; i++) {
+                    if (currentSimulationPos == this.finishPointIndex) {
+                        break;
+                    }
+                    int nextPosAfterOneStep = -1; // initialized to negative value
+
+                    if (currentSimulationPos == 42) { // Center
+                        if (originalPos == 5 || originalPos == 31 || originalPos == 37) {
+                            /*
+                             * Path: 5, 31, 47 to Center
+                             */
+                            nextPosAfterOneStep = 40;
+                        } else if (originalPos == 10 || originalPos == 32 || originalPos == 38) {
+                            /* 
+                             * Path: 10, 32, 38 to Center
+                            */
+                            nextPosAfterOneStep = 41;
+                        } else {
+                            /* 
+                             * Came from 15 originally
+                             * Started at 42
+                            */
+                            nextPosAfterOneStep = 36;
+                        }
+                    } else if (currentSimulationPos == 29)
+                        nextPosAfterOneStep = this.getFinishPointIndex(); // End of outer -> Finish
+
+                    // Path 1-1: 5->31->37->42
+                    else if (currentSimulationPos == 31)
+                        nextPosAfterOneStep = 37;
+                    else if (currentSimulationPos == 37)
+                        nextPosAfterOneStep = 42;
+                    // Path 1-2: 42->40->34->20
+                    else if (currentSimulationPos == 40)
+                        nextPosAfterOneStep = 34;
+                    else if (currentSimulationPos == 34)
+                        nextPosAfterOneStep = 20;
+
+                    // Path 2-1: 10->32->38->42
+                    else if (currentSimulationPos == 32)
+                        nextPosAfterOneStep = 38;
+                    else if (currentSimulationPos == 38)
+                        nextPosAfterOneStep = 42;
+                    // Path 2-2: 42->41->35->25
+                    else if (currentSimulationPos == 41)
+                        nextPosAfterOneStep = 35;
+                    else if (currentSimulationPos == 35)
+                        nextPosAfterOneStep = 25;
+
+                    // Path 3: 15->33->37->42
+                    else if (currentSimulationPos == 33)
+                        nextPosAfterOneStep = 37;
+                    else if (currentSimulationPos == 37)
+                        nextPosAfterOneStep = 42;
+
+                    // Path 4: 42->36->30->43(Finish)
+                    else if (currentSimulationPos == 36)
+                        nextPosAfterOneStep = 30;
+                    else if (currentSimulationPos == 30)
+                        nextPosAfterOneStep = 43;
+
+                    // Start of Path 1
+                    else if (i == 0 && originalPos == 5) {
+                        nextPosAfterOneStep = 31;
+                    }
+                    // Start of Path 2
+                    else if (i == 0 && originalPos == 10) {
+                        nextPosAfterOneStep = 32;
+                    }
+                    // Start of Path 3
+                    else if (i == 0 && originalPos == 15) {
+                        nextPosAfterOneStep = 33;
+                    }
+                    // General cases: Just moves one more index
+                    else {
+                        nextPosAfterOneStep = currentSimulationPos + 1; // Linear move
+                    }
+                    currentSimulationPos = nextPosAfterOneStep;
+                }
+                if (currentSimulationPos > this.finishPointIndex) {
+                    currentSimulationPos = this.finishPointIndex;
+                }
+                return currentSimulationPos;
             default:
-                return 1;
+                return 0;
         }
 
     }
-
-    /*
-    //새로운 공통 전진 로직, mainToute / branchTable 사용
-    public int calculateTargetPosition(Piece piece, int steps) {
-    int pos = piece.getCurrentPositionIndex();
-    if (piece.isFinished()) {
-    return mainRoute[mainRoute.length - 1];
-    }
-    if (steps == -1) {
-    return prevPos(pos);
-    }
-    
-    switch (boardType) {
-    case RECTANGLE: {
-    for (int i = 0; i < steps; i++) {
-    int nxt = nextPos(pos, i == 0);
-    if (nxt == pos)
-    break;
-    pos = nxt;
-    }
-    return pos;
-    }
-    
-    case PENTAGON:
-    // 0) 센터 탈출 예약이 있으면 최우선
-    if (piece.getCenterExitNext() != null) {
-    int tmp = piece.getCenterExitNext();
-    piece.setCenterExitNext(null);
-    if (steps == 0)
-    return tmp;
-    
-    int posOut = tmp;
-    int remain = steps - 1;
-    while (remain-- > 0) {
-    int nxt = prevPos(posOut);
-    if (nxt == posOut)
-    break;
-    posOut = nxt;
-    if (posOut <= 29)
-    break;
-    }
-    if (remain <= 0 || posOut <= 29)
-    return posOut;
-    
-    // 아직 스텝이 남았고 외곽에도 못 갔으면 재귀로 계속
-    piece.setCurrentPositionIndex(posOut);
-    return calculateTargetPosition(piece, remain);
-    }
-    
-    // 1) 한 칸씩 이동하면서, “센터에 도달(=35)했는지”를 체크
-    for (int i = 0; i < steps; i++) {
-    piece.setPrevPositionIndex(pos);
-    
-    int prev = pos;
-    int nxt = nextPos(prev, i == 0);
-    piece.setCurrentPositionIndex(nxt);
-    
-    // 1-1) 다음 위치가 센터(35)라면
-    if (nxt == 35) {
-    // (1-1-가) “마지막 스텝에 멈추는 경우”
-    if (i == steps - 1) {
-    // 멈춘 prev(30~34 중 하나)에 따라, 다음 턴 탈출 인덱스를 예약
-    // 예: prev=31 -> ((31-30+3)%5)+30 = 34
-    int exitIdx2 = ((prev - 30 + 3) % 5) + 30;
-    piece.setCenterExitNext(exitIdx2);
-    
-    // 실제 턴 종료 시점에는 pos=35인 채로 멈춤
-    pos = 35;
-    break;
-    }
-    // (1-1-나) “중간에 센터를 지나치는 경우”
-    else {
-    // ↳ prev가 32라면 ((32-30+1)%5)+30 = 33 (-> 33->28->15… 경로)
-    // ↳ prev가 33라면 ((33-30+1)%5)+30 = 34
-    int passExit = ((prev - 30 + 1) % 5) + 30;
-    pos = passExit;
-    // 남은 스텝이 더 있으므로, i++ 대신 continue로 loop 유지
-    continue;
-    }
-    }
-    
-    // 1-2) 센터가 아닌 일반 이동(외곽 또는 내부 경로)
-    if (nxt == prev) {
-    // 더 이상 이동 불가능하면 중단
-    break;
-    }
-    pos = nxt;
-    }
-    
-    return pos;
-    
-    case HEXAGON: {
-    int prevStored = piece.getPrevPositionIndex();
-    int jump = hardMove(pos, prevStored, steps);
-    System.out.printf("[DBG] hardMove returned %d\n", jump);
-    
-    if (jump != -1) {
-    piece.setCurrentPositionIndex(jump);
-    
-    if (jump == 42) {
-    
-    int exit;
-    if (prevStored % 5 == 0 && prevStored <= 25) {
-    exit = 30 + (prevStored / 5);
-    } else if (prevStored >= 30 && prevStored <= 35) {
-    exit = prevStored + 6;
-    } else if (prevStored >= 36 && prevStored <= 41) {
-    exit = prevStored - 6;
-    } else {
-    exit = ((prevStored / 5) * 5) + 31;
-    }
-    piece.setCenterExitNext(exit);
-    }
-    
-    return jump;
-    }
-    
-    for (int i = 0; i < steps; i++) {
-    int nxt = nextPos(pos, i == 0);
-    if (nxt == pos)
-    break; // 더 못 감
-    
-    if (nxt == 42) {
-    piece.setCurrentPositionIndex(42);
-    int exit = (pos >= 30 && pos <= 35) ? pos + 6 : pos - 6;
-    piece.setCenterExitNext(exit);
-    return 42;
-    }
-    
-    piece.setCurrentPositionIndex(nxt);
-    pos = nxt;
-    }
-    return pos;
-    }
-    
-    default:
-    return pos;
-    }
-    }*/
 
     /*
      * private int hardMove(int start, int prev, int steps) {

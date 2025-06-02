@@ -248,8 +248,6 @@ public class BoardPanel extends JPanel {
                     drawText(g2d, "시작", point, currentSize, 1);
                 else if (i == 10)
                     drawText(g2d, "P", point, currentSize, -1);
-                else if (i == 25)
-                    drawText(g2d, "25 ", point, currentSize, -1);
                 else if (i == 35)
                     drawText(g2d, "C", point, currentSize, 1);
                 if (i == 0 || i == 5 || i == 10 || i == 15 || i == 20 || i == 35)
@@ -270,18 +268,6 @@ public class BoardPanel extends JPanel {
             g2d.setColor(dotColor);
             g2d.fillOval(point.x - currentSize / 2, point.y - currentSize / 2,
                     currentSize, currentSize);
-            // FUCK OFF N
-            /*
-            if (board.getBoardType() == BoardType.RECTANGLE) {
-                if (i == 0)
-                    drawText(g2d, "시작", point, currentSize, 1);
-                else if (i == 20)
-                    drawText(g2d, "참먹이1", point, currentSize, -1);
-                else if (i == 30)
-                    drawText(g2d, "참먹이2", point, currentSize, 1);
-                else if (i == 31)
-                    drawText(g2d, "끝", point, currentSize, -1);
-            }*/
         }
 
         for (Team team : teams) {
