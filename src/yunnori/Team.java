@@ -32,7 +32,7 @@ public class Team {
         return getFinishedPiecesCount() == pieces.size();
     }
 
-    /**
+    /*
      * Gets pieces (leaders or individuals) at a specific position.
      * These are the pieces that can be "clicked" or interacted with directly at that spot.
      */

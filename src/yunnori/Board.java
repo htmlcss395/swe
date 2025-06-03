@@ -60,7 +60,7 @@ public class Board {
         }
     }
 
-    // Method to display points: DO NOT TOUCH ANYMORE
+    // Method to display points: It looks dirty, but it works anyway.
     private void initializeBoardPoints() {
 
         switch (boardType) {
@@ -132,8 +132,6 @@ public class Board {
                 double m = -30, os = 1000;
                 int cx = (int) (m + os / 2), cy = (int) (m + os / 2);
                 int r = (int) (os * 0.40); // 외곽 반지름
-
-                //boardPoints = new BoardPoint[36]; // 0-24 외곽, 25-34 내부, 35 센터
 
                 double startAng = Math.PI / 2 + 2 * Math.PI / 5;
                 for (int v = 0; v < 5; v++) {
@@ -273,30 +271,6 @@ public class Board {
                 }
                 this.pentagonEdges = edges; // 필드 이름은 pentagonEdges이지만, HEXAGON에서도 활용
 
-                /*
-                 * 
-                 */
-                // ───────────────────────────────────────────────
-                // 7) 이동 경로(mainRoute)와 분기(branchTable), noCatchSet 설정
-                // ───────────────────────────────────────────────
-                // mainRoute = new int[] {
-                //         // 30칸 외곽 (0..29) → index 순서대로 “시계방향” 배열
-                //         5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                //         15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-                //         25, 26, 27, 28, 29, 0, 1, 2, 3, 4,
-                //         // (외곽 끝에서) → 1/3(35) → 2/3(40) → 1/3(25) → 1/3(30) → 중앙(42)
-                //         35, 40, 25, 30, 42
-                // };
-                // branchTable = new int[][] {
-                //         { 0, 30 }, { 30, 36 }, { 36, 42 },
-                //         { 5, 31 }, { 31, 40 }, { 40, 42 },
-                //         { 10, 32 }, { 32, 41 }, { 41, 42 },
-                //         { 15, 33 }, { 33, 37 }, { 37, 42 },
-                //         { 20, 34 }, { 34, 38 }, { 38, 42 },
-                //         { 25, 35 }, { 35, 39 }, { 39, 42 }
-                // };
-                // noCatchSet = java.util.Set.of(5); // 헥사곤 시작은 인덱스 5 (⑤번 꼭짓점)
-
                 break;
             }
 
@@ -311,44 +285,57 @@ public class Board {
         if (boardType == BoardType.RECTANGLE) {
             if (currentPos == 0)
                 return 20;
-            if (currentPos == 21)
+            else if (currentPos == 21)
                 return 5;
-            if (currentPos == 26)
+            else if (currentPos == 26)
                 return 10;
-            if (currentPos == 28)
+            else if (currentPos == 28)
                 return 23;
-            if (currentPos == 31)
-                return 30; // not gonna be used anyway
 
             /*
-            * TODO: More detailed rules needed
+            * TODO: More detailed rules needed for Center
             */
-            if (currentPos == 15)
-                return 14;
-            if (currentPos == 23)
-                return 22;
+            else if (currentPos == 23)
+                return 27;
 
             else
                 return currentPos - 1;
+
         } else if (boardType == BoardType.PENTAGON) {
             if (currentPos == 0)
-                return 20;
-            if (currentPos == 21)
+                return 24;
+
+            // Path 1: 5-26-31-35-34-29-20
+            else if (currentPos == 26)
                 return 5;
-            if (currentPos == 26)
+            else if (currentPos == 31)
+                return 26;
+            else if (currentPos == 34)
+                return 35;
+            else if (currentPos == 29)
+                return 34;
+
+            // Path 2: 10-27-32-35-34-29-20
+            else if (currentPos == 27)
                 return 10;
-            if (currentPos == 28)
-                return 23;
-            if (currentPos == 31)
-                return 30; // not gonna be used anyway
+            else if (currentPos == 32)
+                return 27;
+
+            // Path 3: 15-28-33-35-30-25-36
+            else if (currentPos == 28)
+                return 15;
+            else if (currentPos == 33)
+                return 28;
+            else if (currentPos == 30)
+                return 35;
+            else if (currentPos == 25)
+                return 30;
 
             /*
-            * TBA: More detailed rules needed
+            * TODO: More detailed rules needed for Center
             */
-            if (currentPos == 15)
-                return 14;
-            if (currentPos == 23)
-                return 22;
+            else if (currentPos == 35)
+                return 33;
 
             else
                 return currentPos - 1;
@@ -365,8 +352,6 @@ public class Board {
                 return 42;
             else if (currentPos == 34)
                 return 40;
-            else if (currentPos == 20)
-                return 34;
 
             // Path 2: 10-32-38-42-41-35-25
             else if (currentPos == 32)
@@ -377,8 +362,6 @@ public class Board {
                 return 42;
             else if (currentPos == 35)
                 return 41;
-            else if (currentPos == 25)
-                return 35;
 
             // Path 3: 15-33-37-42-36-30-43
             else if (currentPos == 33)
@@ -391,12 +374,10 @@ public class Board {
                 return 36;
 
             /*
-            * TODO: More detailed rules needed
+            * TODO: More detailed rules needed for Center
             */
-            if (currentPos == 25)
-                return 35;
-            if (currentPos == 42)
-                return 38;
+            else if (currentPos == 42)
+                return 39;
 
             else
                 return currentPos - 1;
@@ -667,8 +648,7 @@ public class Board {
     }
 
     public void resetPiecesToStart(List<Piece> piecesToReset) {
-        // The Piece.reset() method now handles detaching from groups and resetting
-        // stacked pieces if it's a leader.
+        // The Piece.reset() method now handles detaching from groups and resetting stacked pieces if it's a leader.
         for (Piece piece : piecesToReset) {
             piece.reset();
         }
