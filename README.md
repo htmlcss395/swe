@@ -1,9 +1,15 @@
 # Term Project: Yunnori
 ### Yunnori game with Swing GUI
-The rectangular version of the map is as follows.
 
+Here's what each version looks like:
+
+Rectangle Map
 ![Image](https://github.com/user-attachments/assets/3c1def41-1360-4907-82ab-a5e90f436f0e)
 
 
-
+Pentagon Map
 ![Image](https://github.com/user-attachments/assets/58962058-0940-441a-9ab6-6a6abc8553c0)
+
+
+Hexagon Map
+![Image](https://github.com/user-attachments/assets/bf167b29-5f27-416d-a76d-1873c6b58569)
