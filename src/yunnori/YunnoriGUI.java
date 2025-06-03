@@ -52,7 +52,7 @@ public class YunnoriGUI extends JFrame implements ActionListener {
         this.boardType = boardType; // Store for restart
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1780, 1200);
+        setSize(1780, 1050);
         setLayout(new BorderLayout());
 
         // Board Panel will be created after game logic is initialized

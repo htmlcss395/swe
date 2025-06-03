@@ -65,8 +65,8 @@ public class Board {
 
         switch (boardType) {
             case RECTANGLE: {
-                double m = 50;
-                double os = 900;
+                double m = 25;
+                double os = 800;
                 double ps_outer = os / 5;
                 double ps_c_c = os / 6;
                 double ps_c_bl = os / 6;
@@ -129,7 +129,7 @@ public class Board {
             }
 
             case PENTAGON: {
-                double m = 50, os = 900;
+                double m = 30, os = 1000;
                 int cx = (int) (m + os / 2), cy = (int) (m + os / 2);
                 int r = (int) (os * 0.40); // 외곽 반지름
 
@@ -353,7 +353,7 @@ public class Board {
                 return 30; // not gonna be used anyway
 
             /*
-            * TBA: More detailed rules needed
+            * TODO: More detailed rules needed
             */
             if (currentPos == 15)
                 return 14;
@@ -423,7 +423,7 @@ public class Board {
                 return 36;
 
             /*
-            * TBA: More detailed rules needed
+            * TODO: More detailed rules needed
             */
             if (currentPos == 25)
                 return 35;
