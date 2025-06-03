@@ -1,4 +1,9 @@
-package src.yunnori;
+package yunnori.swingui;
+
+import yunnori.core.Board; // Assuming Board.BoardPoint is used
+import yunnori.core.BoardType;
+import yunnori.core.Piece;
+import yunnori.core.Team;
 
 import javax.swing.JPanel;
 import java.awt.Color;
@@ -15,16 +20,25 @@ import java.awt.event.MouseEvent;
 
 public class BoardPanel extends JPanel {
     public Board board;
-    private List<Team> teams;
     private int pieceSize = 30;
     public int pointSize = 15;
 
-    private YunnoriGUI guiController;
+    private YunnoriSwingView guiController;
 
     private Piece selectedPiece = null;
     private List<Integer> validMoveTargets = null;
 
-    public BoardPanel(Board board, List<Team> teams, YunnoriGUI guiController) {
+    public List<Team> teams;
+
+    public void setBoard(Board board) {
+        this.board = board;
+    }
+
+    public void setTeams(List<Team> teams) {
+        this.teams = teams;
+    }
+
+    public BoardPanel(Board board, List<Team> teams, YunnoriSwingView guiController) {
         this.board = board;
         this.teams = teams;
         this.guiController = guiController;
@@ -292,12 +306,13 @@ public class BoardPanel extends JPanel {
                 g2d.setColor(teamColor);
 
                 // Highlight if this piece/group is the one selected by the player for a move
+                /*
                 if (p == selectedPiece) {
                     g2d.setColor(Color.CYAN);
                     int hs = pieceSize + 10;
                     g2d.fillOval(pt.x - hs / 2, pt.y - hs / 2, hs, hs);
                     g2d.setColor(teamColor); // Reset to original team color for the piece itself
-                }
+                }*/
                 g2d.fillOval(pt.x - pieceSize / 2, pt.y - pieceSize / 2,
                         pieceSize, pieceSize);
                 g2d.setColor(team.getId() == 2 ? Color.DARK_GRAY : Color.WHITE);

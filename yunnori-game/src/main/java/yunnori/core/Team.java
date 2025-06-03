@@ -1,4 +1,4 @@
-package src.yunnori;
+package yunnori.core;
 
 import java.util.ArrayList;
 import java.util.List;

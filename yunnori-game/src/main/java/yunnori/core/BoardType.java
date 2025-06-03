@@ -1,4 +1,4 @@
-package src.yunnori;
+package yunnori.core;
 
 public enum BoardType {
     RECTANGLE,
