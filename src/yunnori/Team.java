@@ -2,7 +2,6 @@ package src.yunnori;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Team {
     private int id;
@@ -35,8 +34,7 @@ public class Team {
 
     /**
      * Gets pieces (leaders or individuals) at a specific position.
-     * These are the pieces that can be "clicked" or interacted with directly at
-     * that spot.
+     * These are the pieces that can be "clicked" or interacted with directly at that spot.
      */
     public List<Piece> getInteractivePiecesAt(int positionIndex) {
         List<Piece> piecesAtPos = new ArrayList<>();

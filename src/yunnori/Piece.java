@@ -8,24 +8,10 @@ public class Piece {
     private int teamId;
     public int currentPositionIndex;
     private boolean isFinished;
-    private BoardType boardType;
 
     // --- New fields for grouping ---
     private List<Piece> stackedPieces; // Pieces this piece is carrying (if it's a leader)
     private Piece groupLeader; // The leader of the group this piece belongs to (if not the leader itself)
-
-    // TODO: TO BE DELTED; BULLSHIT
-    private int[] prevPositions = new int[2]; // [0]=직전, [1]=그 전
-    private int prevPositionIndex = 0;
-    private Integer centerExitNext = null; // 35에 서서 ‘다음에 34/33 …’ 으로 나갈 곳
-
-    public Integer getCenterExitNext() {
-        return centerExitNext;
-    }
-
-    public void setCenterExitNext(Integer i) {
-        centerExitNext = i;
-    }
 
     public Piece(int id, int teamId) {
         this.id = id;
@@ -34,8 +20,6 @@ public class Piece {
         this.isFinished = false;
         this.stackedPieces = new ArrayList<>();
         this.groupLeader = null;
-        prevPositions[0] = 0;
-        prevPositions[1] = 0;
     }
 
     public int getId() {
@@ -102,8 +86,7 @@ public class Piece {
             pieceToAdd.stackedPieces.clear(); // pieceToAdd is no longer a leader of its old stack
         }
 
-        // Add pieceToAdd itself to the stack, if not already (could happen if it was a
-        // leader and its stack was merged)
+        // Add pieceToAdd itself to the stack, if not already (could happen if it was a leader and its stack was merged)
         if (!this.stackedPieces.contains(pieceToAdd)) {
             this.stackedPieces.add(pieceToAdd);
         }
@@ -129,12 +112,7 @@ public class Piece {
     }
 
     public void moveTo(int newPositionIndex, Board board) {
-        prevPositions[1] = prevPositions[0];
-        prevPositions[0] = this.currentPositionIndex;
-
-        this.prevPositionIndex = this.currentPositionIndex;
         this.currentPositionIndex = newPositionIndex;
-
         if (newPositionIndex == board.getFinishPointIndex())
             this.isFinished = true;
 
@@ -144,29 +122,13 @@ public class Piece {
                 stackedPiece.isFinished = this.isFinished;
             }
         }
-        // debugPrint();
-    }
-
-    public void setCurrentPositionIndex(int idx) {
-        prevPositions[1] = prevPositions[0];
-        prevPositions[0] = this.currentPositionIndex;
-        this.prevPositionIndex = this.currentPositionIndex;
-        this.currentPositionIndex = idx;
-        if (isGroupLeader()) {
-            for (Piece stacked : this.stackedPieces) {
-                stacked.currentPositionIndex = idx;
-            }
-        }
-        debugPrint();
     }
 
     public void reset() {
         leaveGroup(); // If stacked, leave its current group.
 
-        // If this piece was a leader, its former stacked pieces become independent and
-        // need reset.
-        // Create a copy for safe iteration as their reset() will modify
-        // this.stackedPieces via leaveGroup().
+        // If this piece was a leader, its former stacked pieces become independent and need reset.
+        // Create a copy for safe iteration as their reset() will modify this.stackedPieces via leaveGroup().
         List<Piece> piecesFormerlyStacked = new ArrayList<>(this.stackedPieces);
         this.stackedPieces.clear(); // Crucial to clear before resetting children to avoid cycles/errors
 
@@ -184,8 +146,7 @@ public class Piece {
         if (isFinished()) {
             return false;
         }
-        if (isStacked()) { // If this piece is part of a group and not the leader, it cannot move
-            // independently
+        if (isStacked()) { // If this piece is part of a group and not the leader, it cannot move independently
             return false;
         }
         // Update the logic to check whether the game is finished or not
@@ -201,28 +162,6 @@ public class Piece {
         return false;
     }
 
-    public void setPrevPositionIndex(int idx) {
-        this.prevPositionIndex = idx;
-    }
-
-    public int getPrevPositionIndex() {
-        return this.prevPositionIndex;
-
-    }
-
-    public int getPrevPositionIndexs() {
-        return prevPositions[0];
-    }
-
-    public int getPrevPrevPositionIndex() {
-        return prevPositions[1];
-    }
-
-    public void debugPrint() {
-        System.out.printf("Piece[%d]: pos=%d, prev=%d, finished=%b\n", id, currentPositionIndex, prevPositionIndex,
-                isFinished);
-    }
-
     @Override
     public String toString() {
         String base;
@@ -236,8 +175,7 @@ public class Piece {
         if (isGroupLeader()) {
             base += "x" + getGroupSize();
         }
-        // No need for "[S]" if isStacked(), as they won't be directly displayed or
-        // selected usually.
+        // No need for "[S]" if isStacked(), as they won't be directly displayed or selected usually.
         // Leaders' toString will represent the group.
         return base;
     }
