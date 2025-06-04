@@ -5,8 +5,6 @@ import yunnori.swingui.YunnoriSwingView;
 import yunnori.fxui.YunnoriFXView;
 import javafx.application.Application; // For launching JavaFX
 import javax.swing.JOptionPane;
-import javafx.application.Application;
-import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import java.awt.Font;
 
@@ -105,7 +103,7 @@ public class Launcher {
         final boolean finalIsTestMode = isTestMode;
 
         if (choice == 0) { // Swing UI
-            // YunnoriGUI's main method used SwingUtilities.invokeLater, so we do too.
+            // YunnoriSwingView's main method used SwingUtilities.invokeLater, so we do too.
             javax.swing.SwingUtilities.invokeLater(() -> {
                 new YunnoriSwingView(finalNumTeams, finalNumPieces, finalIsTestMode, finalBoardType);
             });

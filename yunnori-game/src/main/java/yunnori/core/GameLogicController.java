@@ -63,7 +63,6 @@ public class GameLogicController {
         this.earnedRollsThisPhase.clear();
         this.catchOccurredInThisPhase = false;
         // currentGameState will be set by startGame/startNewTurnPhase
-        System.out.println("GLC DEBUG: Game setup complete.");
     }
 
     public String startGameAndGetMessages() {
@@ -329,7 +328,6 @@ public class GameLogicController {
     private void setGameOverState(Team winningTeam) { // Changed from handleGameOver, made private for internal use
         currentGameState = GameState.GAME_OVER;
         // The actual winner is now known and can be retrieved by getWinner()
-        // System.out.println("GLC DEBUG: Game over. Winner: " + winningTeam);
     }
 
     // The public method for UI to get formatted win messages

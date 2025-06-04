@@ -1,10 +1,8 @@
 package yunnori.swingui;
 
-import yunnori.core.Board;
 import yunnori.core.BoardType;
 import yunnori.core.GameLogicController;
 import yunnori.core.Piece;
-import yunnori.core.Team;
 import yunnori.core.YunnoriRoll; // If used directly
 
 import javax.swing.*;
